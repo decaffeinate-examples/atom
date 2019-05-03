@@ -1,3 +1,6 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 // Your init script
 //
 // Atom will evaluate this file each time a new window is opened. It is run

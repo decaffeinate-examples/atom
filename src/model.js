@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -5,37 +11,36 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Model;
-let nextInstanceId = 1;
+let Model
+let nextInstanceId = 1
 
 module.exports =
-(Model = (function() {
+(Model = (function () {
   Model = class Model {
-    static initClass() {
-  
-      this.prototype.alive = true;
+    static initClass () {
+      this.prototype.alive = true
     }
-    static resetNextInstanceId() { return nextInstanceId = 1; }
+    static resetNextInstanceId () { return nextInstanceId = 1 }
 
-    constructor(params) {
-      this.assignId(params != null ? params.id : undefined);
-    }
-
-    assignId(id) {
-      if (this.id == null) { this.id = id != null ? id : nextInstanceId++; }
-      if (id >= nextInstanceId) { return nextInstanceId = id + 1; }
+    constructor (params) {
+      this.assignId(params != null ? params.id : undefined)
     }
 
-    destroy() {
-      if (!this.isAlive()) { return; }
-      this.alive = false;
-      return (typeof this.destroyed === 'function' ? this.destroyed() : undefined);
+    assignId (id) {
+      if (this.id == null) { this.id = id != null ? id : nextInstanceId++ }
+      if (id >= nextInstanceId) { return nextInstanceId = id + 1 }
     }
 
-    isAlive() { return this.alive; }
+    destroy () {
+      if (!this.isAlive()) { return }
+      this.alive = false
+      return (typeof this.destroyed === 'function' ? this.destroyed() : undefined)
+    }
 
-    isDestroyed() { return !this.isAlive(); }
-  };
-  Model.initClass();
-  return Model;
-})());
+    isAlive () { return this.alive }
+
+    isDestroyed () { return !this.isAlive() }
+  }
+  Model.initClass()
+  return Model
+})())

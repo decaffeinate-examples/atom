@@ -1,11 +1,18 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let NotificationManager;
-const {Emitter} = require('event-kit');
-const Notification = require('../src/notification');
+let NotificationManager
+const { Emitter } = require('event-kit')
+const Notification = require('../src/notification')
 
 // Public: A notification manager used to create {Notification}s to be shown
 // to the user.
@@ -14,9 +21,9 @@ const Notification = require('../src/notification');
 // global.
 module.exports =
 (NotificationManager = class NotificationManager {
-  constructor() {
-    this.notifications = [];
-    this.emitter = new Emitter;
+  constructor () {
+    this.notifications = []
+    this.emitter = new Emitter()
   }
 
   /*
@@ -29,8 +36,8 @@ module.exports =
   //   * `notification` The {Notification} that was added.
   //
   // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  onDidAddNotification(callback) {
-    return this.emitter.on('did-add-notification', callback);
+  onDidAddNotification (callback) {
+    return this.emitter.on('did-add-notification', callback)
   }
 
   /*
@@ -59,8 +66,8 @@ module.exports =
   //      notification can be dismissed by the user. Defaults to `false`.
   //    * `icon` (optional) A {String} name of an icon from Octicons to display
   //      in the notification header. Defaults to `'check'`.
-  addSuccess(message, options) {
-    return this.addNotification(new Notification('success', message, options));
+  addSuccess (message, options) {
+    return this.addNotification(new Notification('success', message, options))
   }
 
   // Public: Add an informational notification.
@@ -85,8 +92,8 @@ module.exports =
   //      notification can be dismissed by the user. Defaults to `false`.
   //    * `icon` (optional) A {String} name of an icon from Octicons to display
   //      in the notification header. Defaults to `'info'`.
-  addInfo(message, options) {
-    return this.addNotification(new Notification('info', message, options));
+  addInfo (message, options) {
+    return this.addNotification(new Notification('info', message, options))
   }
 
   // Public: Add a warning notification.
@@ -111,8 +118,8 @@ module.exports =
   //      notification can be dismissed by the user. Defaults to `false`.
   //    * `icon` (optional) A {String} name of an icon from Octicons to display
   //      in the notification header. Defaults to `'alert'`.
-  addWarning(message, options) {
-    return this.addNotification(new Notification('warning', message, options));
+  addWarning (message, options) {
+    return this.addNotification(new Notification('warning', message, options))
   }
 
   // Public: Add an error notification.
@@ -139,8 +146,8 @@ module.exports =
   //      in the notification header. Defaults to `'flame'`.
   //    * `stack` (optional) A preformatted {String} with stack trace information
   //      describing the location of the error.
-  addError(message, options) {
-    return this.addNotification(new Notification('error', message, options));
+  addError (message, options) {
+    return this.addNotification(new Notification('error', message, options))
   }
 
   // Public: Add a fatal error notification.
@@ -167,18 +174,18 @@ module.exports =
   //      in the notification header. Defaults to `'bug'`.
   //    * `stack` (optional) A preformatted {String} with stack trace information
   //      describing the location of the error.
-  addFatalError(message, options) {
-    return this.addNotification(new Notification('fatal', message, options));
+  addFatalError (message, options) {
+    return this.addNotification(new Notification('fatal', message, options))
   }
 
-  add(type, message, options) {
-    return this.addNotification(new Notification(type, message, options));
+  add (type, message, options) {
+    return this.addNotification(new Notification(type, message, options))
   }
 
-  addNotification(notification) {
-    this.notifications.push(notification);
-    this.emitter.emit('did-add-notification', notification);
-    return notification;
+  addNotification (notification) {
+    this.notifications.push(notification)
+    this.emitter.emit('did-add-notification', notification)
+    return notification
   }
 
   /*
@@ -188,13 +195,13 @@ module.exports =
   // Public: Get all the notifications.
   //
   // Returns an {Array} of {Notification}s.
-  getNotifications() { return this.notifications.slice(); }
+  getNotifications () { return this.notifications.slice() }
 
   /*
   Section: Managing Notifications
   */
 
-  clear() {
-    return this.notifications = [];
+  clear () {
+    return this.notifications = []
   }
-});
+})

@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-useless-escape,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,10 +12,10 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let TooltipManager;
-const _ = require('underscore-plus');
-const {Disposable, CompositeDisposable} = require('event-kit');
-let Tooltip = null;
+let TooltipManager
+const _ = require('underscore-plus')
+const { Disposable, CompositeDisposable } = require('event-kit')
+let Tooltip = null
 
 // Essential: Associates tooltips with HTML elements.
 //
@@ -53,25 +59,25 @@ let Tooltip = null;
 //   keyBindingTarget: @findEditor.element
 // ```
 module.exports =
-(TooltipManager = (function() {
+(TooltipManager = (function () {
   TooltipManager = class TooltipManager {
-    static initClass() {
+    static initClass () {
       this.prototype.defaults = {
         trigger: 'hover',
         container: 'body',
         html: true,
         placement: 'auto top',
         viewportPadding: 2
-      };
-  
+      }
+
       this.prototype.hoverDefaults =
-        {delay: {show: 1000, hide: 100}};
+        { delay: { show: 1000, hide: 100 } }
     }
 
-    constructor({keymapManager, viewRegistry}) {
-      this.keymapManager = keymapManager;
-      this.viewRegistry = viewRegistry;
-      this.tooltips = new Map();
+    constructor ({ keymapManager, viewRegistry }) {
+      this.keymapManager = keymapManager
+      this.viewRegistry = viewRegistry
+      this.tooltips = new Map()
     }
 
     // Essential: Add a tooltip to the given element.
@@ -121,66 +127,66 @@ module.exports =
     //
     // Returns a {Disposable} on which `.dispose()` can be called to remove the
     // tooltip.
-    add(target, options) {
-      let disposable;
+    add (target, options) {
+      let disposable
       if (target.jquery) {
-        disposable = new CompositeDisposable;
-        for (let element of Array.from(target)) { disposable.add(this.add(element, options)); }
-        return disposable;
+        disposable = new CompositeDisposable()
+        for (let element of Array.from(target)) { disposable.add(this.add(element, options)) }
+        return disposable
       }
 
-      if (Tooltip == null) { Tooltip = require('./tooltip'); }
+      if (Tooltip == null) { Tooltip = require('./tooltip') }
 
-      const {keyBindingCommand, keyBindingTarget} = options;
+      const { keyBindingCommand, keyBindingTarget } = options
 
       if (keyBindingCommand != null) {
-        const bindings = this.keymapManager.findKeyBindings({command: keyBindingCommand, target: keyBindingTarget});
-        const keystroke = getKeystroke(bindings);
+        const bindings = this.keymapManager.findKeyBindings({ command: keyBindingCommand, target: keyBindingTarget })
+        const keystroke = getKeystroke(bindings)
         if ((options.title != null) && (keystroke != null)) {
-          options.title += ` ${getKeystroke(bindings)}`;
+          options.title += ` ${getKeystroke(bindings)}`
         } else if (keystroke != null) {
-          options.title = getKeystroke(bindings);
+          options.title = getKeystroke(bindings)
         }
       }
 
-      delete options.selector;
-      options = _.defaults(options, this.defaults);
+      delete options.selector
+      options = _.defaults(options, this.defaults)
       if (options.trigger === 'hover') {
-        options = _.defaults(options, this.hoverDefaults);
+        options = _.defaults(options, this.hoverDefaults)
       }
 
-      const tooltip = new Tooltip(target, options, this.viewRegistry);
+      const tooltip = new Tooltip(target, options, this.viewRegistry)
 
       if (!this.tooltips.has(target)) {
-        this.tooltips.set(target, []);
+        this.tooltips.set(target, [])
       }
-      this.tooltips.get(target).push(tooltip);
+      this.tooltips.get(target).push(tooltip)
 
-      const hideTooltip = function() {
-        tooltip.leave({currentTarget: target});
-        return tooltip.hide();
-      };
+      const hideTooltip = function () {
+        tooltip.leave({ currentTarget: target })
+        return tooltip.hide()
+      }
 
-      window.addEventListener('resize', hideTooltip);
+      window.addEventListener('resize', hideTooltip)
 
       disposable = new Disposable(() => {
-        window.removeEventListener('resize', hideTooltip);
-        hideTooltip();
-        tooltip.destroy();
+        window.removeEventListener('resize', hideTooltip)
+        hideTooltip()
+        tooltip.destroy()
 
         if (this.tooltips.has(target)) {
-          const tooltipsForTarget = this.tooltips.get(target);
-          const index = tooltipsForTarget.indexOf(tooltip);
+          const tooltipsForTarget = this.tooltips.get(target)
+          const index = tooltipsForTarget.indexOf(tooltip)
           if (index !== -1) {
-            tooltipsForTarget.splice(index, 1);
+            tooltipsForTarget.splice(index, 1)
           }
           if (tooltipsForTarget.length === 0) {
-            return this.tooltips.delete(target);
+            return this.tooltips.delete(target)
           }
         }
-      });
+      })
 
-      return disposable;
+      return disposable
     }
 
     // Extended: Find the tooltips that have been applied to the given element.
@@ -188,26 +194,26 @@ module.exports =
     // * `target` The `HTMLElement` to find tooltips on.
     //
     // Returns an {Array} of `Tooltip` objects that match the `target`.
-    findTooltips(target) {
+    findTooltips (target) {
       if (this.tooltips.has(target)) {
-        return this.tooltips.get(target).slice();
+        return this.tooltips.get(target).slice()
       } else {
-        return [];
+        return []
       }
     }
-  };
-  TooltipManager.initClass();
-  return TooltipManager;
-})());
-
-const humanizeKeystrokes = function(keystroke) {
-  let keystrokes = keystroke.split(' ');
-  keystrokes = (Array.from(keystrokes).map((stroke) => _.humanizeKeystroke(stroke)));
-  return keystrokes.join(' ');
-};
-
-var getKeystroke = function(bindings) {
-  if (bindings != null ? bindings.length : undefined) {
-    return `<span class=\"keystroke\">${humanizeKeystrokes(bindings[0].keystrokes)}</span>`;
   }
-};
+  TooltipManager.initClass()
+  return TooltipManager
+})())
+
+const humanizeKeystrokes = function (keystroke) {
+  let keystrokes = keystroke.split(' ')
+  keystrokes = (Array.from(keystrokes).map((stroke) => _.humanizeKeystroke(stroke)))
+  return keystrokes.join(' ')
+}
+
+var getKeystroke = function (bindings) {
+  if (bindings != null ? bindings.length : undefined) {
+    return `<span class=\"keystroke\">${humanizeKeystrokes(bindings[0].keystrokes)}</span>`
+  }
+}

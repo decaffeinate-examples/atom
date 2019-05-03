@@ -1,3 +1,13 @@
+/** @babel */
+/* eslint-disable
+    new-cap,
+    no-cond-assign,
+    no-return-assign,
+    no-undef,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -7,12 +17,12 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let ViewRegistry;
-const Grim = require('grim');
-const {Disposable} = require('event-kit');
-const _ = require('underscore-plus');
+let ViewRegistry
+const Grim = require('grim')
+const { Disposable } = require('event-kit')
+const _ = require('underscore-plus')
 
-const AnyConstructor = Symbol('any-constructor');
+const AnyConstructor = Symbol('any-constructor')
 
 // Essential: `ViewRegistry` handles the association between model and view
 // types in Atom. We call this association a View Provider. As in, for a given
@@ -34,23 +44,23 @@ const AnyConstructor = Symbol('any-constructor');
 //
 // You can access the `ViewRegistry` object via `atom.views`.
 module.exports =
-(ViewRegistry = (function() {
+(ViewRegistry = (function () {
   ViewRegistry = class ViewRegistry {
-    static initClass() {
-      this.prototype.animationFrameRequest = null;
-      this.prototype.documentReadInProgress = false;
+    static initClass () {
+      this.prototype.animationFrameRequest = null
+      this.prototype.documentReadInProgress = false
     }
 
-    constructor(atomEnvironment) {
-      this.performDocumentUpdate = this.performDocumentUpdate.bind(this);
-      this.atomEnvironment = atomEnvironment;
-      this.clear();
+    constructor (atomEnvironment) {
+      this.performDocumentUpdate = this.performDocumentUpdate.bind(this)
+      this.atomEnvironment = atomEnvironment
+      this.clear()
     }
 
-    clear() {
-      this.views = new WeakMap;
-      this.providers = [];
-      return this.clearDocumentRequests();
+    clear () {
+      this.views = new WeakMap()
+      this.providers = []
+      return this.clearDocumentRequests()
     }
 
     // Essential: Add a provider that will be used to construct views in the
@@ -81,32 +91,32 @@ module.exports =
     //
     // Returns a {Disposable} on which `.dispose()` can be called to remove the
     // added provider.
-    addViewProvider(modelConstructor, createView) {
-      let provider;
+    addViewProvider (modelConstructor, createView) {
+      let provider
       if (arguments.length === 1) {
         switch (typeof modelConstructor) {
           case 'function':
-            provider = {createView: modelConstructor, modelConstructor: AnyConstructor};
-            break;
+            provider = { createView: modelConstructor, modelConstructor: AnyConstructor }
+            break
           case 'object':
-            Grim.deprecate("atom.views.addViewProvider now takes 2 arguments: a model constructor and a createView function. See docs for details.");
-            provider = modelConstructor;
-            break;
+            Grim.deprecate('atom.views.addViewProvider now takes 2 arguments: a model constructor and a createView function. See docs for details.')
+            provider = modelConstructor
+            break
           default:
-            throw new TypeError("Arguments to addViewProvider must be functions");
+            throw new TypeError('Arguments to addViewProvider must be functions')
         }
       } else {
-        provider = {modelConstructor, createView};
+        provider = { modelConstructor, createView }
       }
 
-      this.providers.push(provider);
+      this.providers.push(provider)
       return new Disposable(() => {
-        return this.providers = this.providers.filter(p => p !== provider);
-      });
+        return this.providers = this.providers.filter(p => p !== provider)
+      })
     }
 
-    getViewProviderCount() {
-      return this.providers.length;
+    getViewProviderCount () {
+      return this.providers.length
     }
 
     // Essential: Get the view associated with an object in the workspace.
@@ -134,136 +144,138 @@ module.exports =
     // If no associated view is returned by the sequence an error is thrown.
     //
     // Returns a DOM element.
-    getView(object) {
-      let view;
-      if (object == null) { return; }
+    getView (object) {
+      let view
+      if (object == null) { return }
 
       if (view = this.views.get(object)) {
-        return view;
+        return view
       } else {
-        view = this.createView(object);
-        this.views.set(object, view);
-        return view;
+        view = this.createView(object)
+        this.views.set(object, view)
+        return view
       }
     }
 
-    createView(object) {
-      let element, viewConstructor;
+    createView (object) {
+      let element, viewConstructor
       if (object instanceof HTMLElement) {
-        return object;
+        return object
       }
 
       if (typeof (object != null ? object.getElement : undefined) === 'function') {
-        element = object.getElement();
+        element = object.getElement()
         if (element instanceof HTMLElement) {
-          return element;
+          return element
         }
       }
 
       if ((object != null ? object.element : undefined) instanceof HTMLElement) {
-        return object.element;
+        return object.element
       }
 
       if (object != null ? object.jquery : undefined) {
-        return object[0];
+        return object[0]
       }
 
       for (let provider of Array.from(this.providers)) {
         if (provider.modelConstructor === AnyConstructor) {
           if (element = provider.createView(object, this.atomEnvironment)) {
-            return element;
+            return element
           }
-          continue;
+          continue
         }
 
         if (object instanceof provider.modelConstructor) {
           if (element = typeof provider.createView === 'function' ? provider.createView(object, this.atomEnvironment) : undefined) {
-            return element;
+            return element
           }
 
           if (viewConstructor = provider.viewConstructor) {
-            element = new viewConstructor;
-            if ((typeof element.initialize === 'function' ? element.initialize(object) : undefined) == null) { if (typeof element.setModel === 'function') {
-              element.setModel(object);
-            } }
-            return element;
+            element = new viewConstructor()
+            if ((typeof element.initialize === 'function' ? element.initialize(object) : undefined) == null) {
+              if (typeof element.setModel === 'function') {
+                element.setModel(object)
+              }
+            }
+            return element
           }
         }
       }
 
       if (viewConstructor = __guardMethod__(object, 'getViewClass', o => o.getViewClass())) {
-        const view = new viewConstructor(object);
-        return view[0];
+        const view = new viewConstructor(object)
+        return view[0]
       }
 
-      throw new Error(`Can't create a view for ${object.constructor.name} instance. Please register a view provider.`);
+      throw new Error(`Can't create a view for ${object.constructor.name} instance. Please register a view provider.`)
     }
 
-    updateDocument(fn) {
-      this.documentWriters.push(fn);
-      if (!this.documentReadInProgress) { this.requestDocumentUpdate(); }
+    updateDocument (fn) {
+      this.documentWriters.push(fn)
+      if (!this.documentReadInProgress) { this.requestDocumentUpdate() }
       return new Disposable(() => {
-        return this.documentWriters = this.documentWriters.filter(writer => writer !== fn);
-      });
+        return this.documentWriters = this.documentWriters.filter(writer => writer !== fn)
+      })
     }
 
-    readDocument(fn) {
-      this.documentReaders.push(fn);
-      this.requestDocumentUpdate();
+    readDocument (fn) {
+      this.documentReaders.push(fn)
+      this.requestDocumentUpdate()
       return new Disposable(() => {
-        return this.documentReaders = this.documentReaders.filter(reader => reader !== fn);
-      });
+        return this.documentReaders = this.documentReaders.filter(reader => reader !== fn)
+      })
     }
 
-    getNextUpdatePromise() {
+    getNextUpdatePromise () {
       return this.nextUpdatePromise != null ? this.nextUpdatePromise : (this.nextUpdatePromise = new Promise(resolve => {
-        return this.resolveNextUpdatePromise = resolve;
-      }));
+        return this.resolveNextUpdatePromise = resolve
+      }))
     }
 
-    clearDocumentRequests() {
-      this.documentReaders = [];
-      this.documentWriters = [];
-      this.nextUpdatePromise = null;
-      this.resolveNextUpdatePromise = null;
+    clearDocumentRequests () {
+      this.documentReaders = []
+      this.documentWriters = []
+      this.nextUpdatePromise = null
+      this.resolveNextUpdatePromise = null
       if (this.animationFrameRequest != null) {
-        cancelAnimationFrame(this.animationFrameRequest);
-        return this.animationFrameRequest = null;
+        cancelAnimationFrame(this.animationFrameRequest)
+        return this.animationFrameRequest = null
       }
     }
 
-    requestDocumentUpdate() {
-      return this.animationFrameRequest != null ? this.animationFrameRequest : (this.animationFrameRequest = requestAnimationFrame(this.performDocumentUpdate));
+    requestDocumentUpdate () {
+      return this.animationFrameRequest != null ? this.animationFrameRequest : (this.animationFrameRequest = requestAnimationFrame(this.performDocumentUpdate))
     }
 
-    performDocumentUpdate() {
-      let writer;
-      let reader;
-      const { resolveNextUpdatePromise } = this;
-      this.animationFrameRequest = null;
-      this.nextUpdatePromise = null;
-      this.resolveNextUpdatePromise = null;
+    performDocumentUpdate () {
+      let writer
+      let reader
+      const { resolveNextUpdatePromise } = this
+      this.animationFrameRequest = null
+      this.nextUpdatePromise = null
+      this.resolveNextUpdatePromise = null
 
-      while ((writer = this.documentWriters.shift())) { writer(); }
+      while ((writer = this.documentWriters.shift())) { writer() }
 
-      this.documentReadInProgress = true;
-      while ((reader = this.documentReaders.shift())) { reader(); }
-      this.documentReadInProgress = false;
+      this.documentReadInProgress = true
+      while ((reader = this.documentReaders.shift())) { reader() }
+      this.documentReadInProgress = false
 
       // process updates requested as a result of reads
-      while ((writer = this.documentWriters.shift())) { writer(); }
+      while ((writer = this.documentWriters.shift())) { writer() }
 
-      return (typeof resolveNextUpdatePromise === 'function' ? resolveNextUpdatePromise() : undefined);
+      return (typeof resolveNextUpdatePromise === 'function' ? resolveNextUpdatePromise() : undefined)
     }
-  };
-  ViewRegistry.initClass();
-  return ViewRegistry;
-})());
+  }
+  ViewRegistry.initClass()
+  return ViewRegistry
+})())
 
-function __guardMethod__(obj, methodName, transform) {
+function __guardMethod__ (obj, methodName, transform) {
   if (typeof obj !== 'undefined' && obj !== null && typeof obj[methodName] === 'function') {
-    return transform(obj, methodName);
+    return transform(obj, methodName)
   } else {
-    return undefined;
+    return undefined
   }
 }

@@ -1,3 +1,15 @@
+/** @babel */
+/* eslint-disable
+    constructor-super,
+    no-cond-assign,
+    no-constant-condition,
+    no-eval,
+    no-this-before-super,
+    no-undef,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS001: Remove Babel/TypeScript constructor workaround
@@ -7,14 +19,14 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let GrammarRegistry;
-const _ = require('underscore-plus');
-const FirstMate = require('first-mate');
-const Token = require('./token');
-const fs = require('fs-plus');
-const Grim = require('grim');
+let GrammarRegistry
+const _ = require('underscore-plus')
+const FirstMate = require('first-mate')
+const Token = require('./token')
+const fs = require('fs-plus')
+const Grim = require('grim')
 
-const PathSplitRegex = new RegExp("[/.]");
+const PathSplitRegex = new RegExp('[/.]')
 
 // Extended: Syntax class holding the grammars used for tokenizing.
 //
@@ -24,21 +36,21 @@ const PathSplitRegex = new RegExp("[/.]");
 // language-specific comment regexes. See {::getProperty} for more details.
 module.exports =
 (GrammarRegistry = class GrammarRegistry extends FirstMate.GrammarRegistry {
-  constructor(param) {
+  constructor (param) {
     {
       // Hack: trick Babel/TypeScript into allowing this before super.
-      if (false) { super(); }
-      let thisFn = (() => { return this; }).toString();
-      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
-      eval(`${thisName} = this;`);
+      if (false) { super() }
+      let thisFn = (() => { return this }).toString()
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1]
+      eval(`${thisName} = this;`)
     }
-    if (param == null) { param = {}; }
-    const {config} = param;
-    this.config = config;
-    super({maxTokensPerLine: 100, maxLineLength: 1000});
+    if (param == null) { param = {} }
+    const { config } = param
+    this.config = config
+    super({ maxTokensPerLine: 100, maxLineLength: 1000 })
   }
 
-  createToken(value, scopes) { return new Token({value, scopes}); }
+  createToken (value, scopes) { return new Token({ value, scopes }) }
 
   // Extended: Select a grammar for the given file path and file contents.
   //
@@ -49,87 +61,87 @@ module.exports =
   // * `fileContents` A {String} of text for the file path.
   //
   // Returns a {Grammar}, never null.
-  selectGrammar(filePath, fileContents) {
-    return this.selectGrammarWithScore(filePath, fileContents).grammar;
+  selectGrammar (filePath, fileContents) {
+    return this.selectGrammarWithScore(filePath, fileContents).grammar
   }
 
-  selectGrammarWithScore(filePath, fileContents) {
-    let grammar, score;
-    let bestMatch = null;
-    let highestScore = -Infinity;
+  selectGrammarWithScore (filePath, fileContents) {
+    let grammar, score
+    let bestMatch = null
+    let highestScore = -Infinity
     for (grammar of Array.from(this.grammars)) {
-      score = this.getGrammarScore(grammar, filePath, fileContents);
+      score = this.getGrammarScore(grammar, filePath, fileContents)
       if ((score > highestScore) || (bestMatch == null)) {
-        bestMatch = grammar;
-        highestScore = score;
+        bestMatch = grammar
+        highestScore = score
       }
     }
-    return {grammar: bestMatch, score: highestScore};
+    return { grammar: bestMatch, score: highestScore }
   }
 
   // Extended: Returns a {Number} representing how well the grammar matches the
   // `filePath` and `contents`.
-  getGrammarScore(grammar, filePath, contents) {
-    if ((contents == null) && fs.isFileSync(filePath)) { contents = fs.readFileSync(filePath, 'utf8'); }
+  getGrammarScore (grammar, filePath, contents) {
+    if ((contents == null) && fs.isFileSync(filePath)) { contents = fs.readFileSync(filePath, 'utf8') }
 
-    let score = this.getGrammarPathScore(grammar, filePath);
+    let score = this.getGrammarPathScore(grammar, filePath)
     if ((score > 0) && !grammar.bundledPackage) {
-      score += 0.25;
+      score += 0.25
     }
     if (this.grammarMatchesContents(grammar, contents)) {
-      score += 0.125;
+      score += 0.125
     }
-    return score;
+    return score
   }
 
-  getGrammarPathScore(grammar, filePath) {
-    let customFileTypes;
-    if (!filePath) { return -1; }
-    if (process.platform === 'win32') { filePath = filePath.replace(/\\/g, '/'); }
+  getGrammarPathScore (grammar, filePath) {
+    let customFileTypes
+    if (!filePath) { return -1 }
+    if (process.platform === 'win32') { filePath = filePath.replace(/\\/g, '/') }
 
-    const pathComponents = filePath.toLowerCase().split(PathSplitRegex);
-    let pathScore = -1;
+    const pathComponents = filePath.toLowerCase().split(PathSplitRegex)
+    let pathScore = -1
 
-    let { fileTypes } = grammar;
+    let { fileTypes } = grammar
     if (customFileTypes = __guard__(this.config.get('core.customFileTypes'), x => x[grammar.scopeName])) {
-      fileTypes = fileTypes.concat(customFileTypes);
+      fileTypes = fileTypes.concat(customFileTypes)
     }
 
     for (let i = 0; i < fileTypes.length; i++) {
-      const fileType = fileTypes[i];
-      const fileTypeComponents = fileType.toLowerCase().split(PathSplitRegex);
-      const pathSuffix = pathComponents.slice(-fileTypeComponents.length);
+      const fileType = fileTypes[i]
+      const fileTypeComponents = fileType.toLowerCase().split(PathSplitRegex)
+      const pathSuffix = pathComponents.slice(-fileTypeComponents.length)
       if (_.isEqual(pathSuffix, fileTypeComponents)) {
-        pathScore = Math.max(pathScore, fileType.length);
+        pathScore = Math.max(pathScore, fileType.length)
         if (i >= grammar.fileTypes.length) {
-          pathScore += 0.5;
+          pathScore += 0.5
         }
       }
     }
 
-    return pathScore;
+    return pathScore
   }
 
-  grammarMatchesContents(grammar, contents) {
-    if ((contents == null) || (grammar.firstLineRegex == null)) { return false; }
+  grammarMatchesContents (grammar, contents) {
+    if ((contents == null) || (grammar.firstLineRegex == null)) { return false }
 
-    let escaped = false;
-    let numberOfNewlinesInRegex = 0;
+    let escaped = false
+    let numberOfNewlinesInRegex = 0
     for (let character of Array.from(grammar.firstLineRegex.source)) {
       switch (character) {
         case '\\':
-          escaped = !escaped;
-          break;
+          escaped = !escaped
+          break
         case 'n':
-          if (escaped) { numberOfNewlinesInRegex++; }
-          escaped = false;
-          break;
+          if (escaped) { numberOfNewlinesInRegex++ }
+          escaped = false
+          break
         default:
-          escaped = false;
+          escaped = false
       }
     }
-    const lines = contents.split('\n');
-    return grammar.firstLineRegex.testSync(lines.slice(0, +numberOfNewlinesInRegex + 1 || undefined).join('\n'));
+    const lines = contents.split('\n')
+    return grammar.firstLineRegex.testSync(lines.slice(0, +numberOfNewlinesInRegex + 1 || undefined).join('\n'))
   }
 
   // Deprecated: Get the grammar override for the given file path.
@@ -137,11 +149,11 @@ module.exports =
   // * `filePath` A {String} file path.
   //
   // Returns a {String} such as `"source.js"`.
-  grammarOverrideForPath(filePath) {
-    let editor;
-    Grim.deprecate('Use atom.textEditors.getGrammarOverride(editor) instead');
+  grammarOverrideForPath (filePath) {
+    let editor
+    Grim.deprecate('Use atom.textEditors.getGrammarOverride(editor) instead')
     if (editor = getEditorForPath(filePath)) {
-      return atom.textEditors.getGrammarOverride(editor);
+      return atom.textEditors.getGrammarOverride(editor)
     }
   }
 
@@ -151,11 +163,11 @@ module.exports =
   // * `scopeName` A {String} such as `"source.js"`.
   //
   // Returns undefined
-  setGrammarOverrideForPath(filePath, scopeName) {
-    let editor;
-    Grim.deprecate('Use atom.textEditors.setGrammarOverride(editor, scopeName) instead');
+  setGrammarOverrideForPath (filePath, scopeName) {
+    let editor
+    Grim.deprecate('Use atom.textEditors.setGrammarOverride(editor, scopeName) instead')
     if (editor = getEditorForPath(filePath)) {
-      atom.textEditors.setGrammarOverride(editor, scopeName);
+      atom.textEditors.setGrammarOverride(editor, scopeName)
     }
   }
 
@@ -164,21 +176,21 @@ module.exports =
   // * `filePath` A {String} file path.
   //
   // Returns undefined.
-  clearGrammarOverrideForPath(filePath) {
-    let editor;
-    Grim.deprecate('Use atom.textEditors.clearGrammarOverride(editor) instead');
+  clearGrammarOverrideForPath (filePath) {
+    let editor
+    Grim.deprecate('Use atom.textEditors.clearGrammarOverride(editor) instead')
     if (editor = getEditorForPath(filePath)) {
-      atom.textEditors.clearGrammarOverride(editor);
+      atom.textEditors.clearGrammarOverride(editor)
     }
   }
-});
+})
 
-var getEditorForPath = function(filePath) {
+var getEditorForPath = function (filePath) {
   if (filePath != null) {
-    return atom.workspace.getTextEditors().find(editor => editor.getPath() === filePath);
+    return atom.workspace.getTextEditors().find(editor => editor.getPath() === filePath)
   }
-};
+}
 
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

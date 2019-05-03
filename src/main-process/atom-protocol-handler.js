@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -5,10 +11,10 @@
  * DS103: Rewrite code to no longer use __guard__
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let AtomProtocolHandler;
-const {protocol} = require('electron');
-const fs = require('fs');
-const path = require('path');
+let AtomProtocolHandler
+const { protocol } = require('electron')
+const fs = require('fs')
+const path = require('path')
 
 // Handles requests with 'atom' protocol.
 //
@@ -23,46 +29,46 @@ const path = require('path');
 //
 module.exports =
 (AtomProtocolHandler = class AtomProtocolHandler {
-  constructor(resourcePath, safeMode) {
-    this.loadPaths = [];
+  constructor (resourcePath, safeMode) {
+    this.loadPaths = []
 
     if (!safeMode) {
-      this.loadPaths.push(path.join(process.env.ATOM_HOME, 'dev', 'packages'));
+      this.loadPaths.push(path.join(process.env.ATOM_HOME, 'dev', 'packages'))
     }
 
-    this.loadPaths.push(path.join(process.env.ATOM_HOME, 'packages'));
-    this.loadPaths.push(path.join(resourcePath, 'node_modules'));
+    this.loadPaths.push(path.join(process.env.ATOM_HOME, 'packages'))
+    this.loadPaths.push(path.join(resourcePath, 'node_modules'))
 
-    this.registerAtomProtocol();
+    this.registerAtomProtocol()
   }
 
   // Creates the 'atom' custom protocol handler.
-  registerAtomProtocol() {
+  registerAtomProtocol () {
     return protocol.registerFileProtocol('atom', (request, callback) => {
-      let filePath;
-      const relativePath = path.normalize(request.url.substr(7));
+      let filePath
+      const relativePath = path.normalize(request.url.substr(7))
 
       if (relativePath.indexOf('assets/') === 0) {
-        const assetsPath = path.join(process.env.ATOM_HOME, relativePath);
-        if (__guardMethod__(fs.statSyncNoException(assetsPath), 'isFile', o => o.isFile())) { filePath = assetsPath; }
+        const assetsPath = path.join(process.env.ATOM_HOME, relativePath)
+        if (__guardMethod__(fs.statSyncNoException(assetsPath), 'isFile', o => o.isFile())) { filePath = assetsPath }
       }
 
       if (!filePath) {
         for (let loadPath of Array.from(this.loadPaths)) {
-          filePath = path.join(loadPath, relativePath);
-          if (__guardMethod__(fs.statSyncNoException(filePath), 'isFile', o1 => o1.isFile())) { break; }
+          filePath = path.join(loadPath, relativePath)
+          if (__guardMethod__(fs.statSyncNoException(filePath), 'isFile', o1 => o1.isFile())) { break }
         }
       }
 
-      return callback(filePath);
-    });
+      return callback(filePath)
+    })
   }
-});
+})
 
-function __guardMethod__(obj, methodName, transform) {
+function __guardMethod__ (obj, methodName, transform) {
   if (typeof obj !== 'undefined' && obj !== null && typeof obj[methodName] === 'function') {
-    return transform(obj, methodName);
+    return transform(obj, methodName)
   } else {
-    return undefined;
+    return undefined
   }
 }

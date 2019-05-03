@@ -1,15 +1,22 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+    prefer-promise-reject-errors,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let DefaultDirectorySearcher;
-const Task = require('./task');
+let DefaultDirectorySearcher
+const Task = require('./task')
 
 // Searches local files for lines matching a specified regex. Implements `.then()`
 // so that it can be used with `Promise.all()`.
 class DirectorySearch {
-  constructor(rootPaths, regex, options) {
+  constructor (rootPaths, regex, options) {
     const scanHandlerOptions = {
       ignoreCase: regex.ignoreCase,
       inclusions: options.inclusions,
@@ -17,32 +24,32 @@ class DirectorySearch {
       excludeVcsIgnores: options.excludeVcsIgnores,
       globalExclusions: options.exclusions,
       follow: options.follow
-    };
+    }
     const searchOptions = {
       leadingContextLineCount: options.leadingContextLineCount,
       trailingContextLineCount: options.trailingContextLineCount
-    };
-    this.task = new Task(require.resolve('./scan-handler'));
-    this.task.on('scan:result-found', options.didMatch);
-    this.task.on('scan:file-error', options.didError);
-    this.task.on('scan:paths-searched', options.didSearchPaths);
+    }
+    this.task = new Task(require.resolve('./scan-handler'))
+    this.task.on('scan:result-found', options.didMatch)
+    this.task.on('scan:file-error', options.didError)
+    this.task.on('scan:paths-searched', options.didSearchPaths)
     this.promise = new Promise((resolve, reject) => {
-      this.task.on('task:cancelled', reject);
+      this.task.on('task:cancelled', reject)
       return this.task.start(rootPaths, regex.source, scanHandlerOptions, searchOptions, () => {
-        this.task.terminate();
-        return resolve();
-      });
-    });
+        this.task.terminate()
+        return resolve()
+      })
+    })
   }
 
-  then(...args) {
-    return this.promise.then.apply(this.promise, args);
+  then (...args) {
+    return this.promise.then.apply(this.promise, args)
   }
 
-  cancel() {
+  cancel () {
     // This will cause @promise to reject.
-    this.task.cancel();
-    return null;
+    this.task.cancel()
+    return null
   }
 }
 
@@ -54,7 +61,7 @@ module.exports =
   // * `directory` {Directory} whose search needs might be supported by this object.
   //
   // Returns a `boolean` indicating whether this object can search this `Directory`.
-  canSearchDirectory(directory) { return true; }
+  canSearchDirectory (directory) { return true }
 
   // Performs a text search for files in the specified `Directory`, subject to the
   // specified parameters.
@@ -89,26 +96,26 @@ module.exports =
   //
   // Returns a *thenable* `DirectorySearch` that includes a `cancel()` method. If `cancel()` is
   // invoked before the `DirectorySearch` is determined, it will resolve the `DirectorySearch`.
-  search(directories, regex, options) {
-    const rootPaths = directories.map(directory => directory.getPath());
-    let isCancelled = false;
-    const directorySearch = new DirectorySearch(rootPaths, regex, options);
-    const promise = new Promise(function(resolve, reject) {
-      return directorySearch.then(resolve, function() {
+  search (directories, regex, options) {
+    const rootPaths = directories.map(directory => directory.getPath())
+    let isCancelled = false
+    const directorySearch = new DirectorySearch(rootPaths, regex, options)
+    const promise = new Promise(function (resolve, reject) {
+      return directorySearch.then(resolve, function () {
         if (isCancelled) {
-          return resolve();
+          return resolve()
         } else {
-          return reject();
+          return reject()
         }
-      });
-    });
+      })
+    })
     return {
       then: promise.then.bind(promise),
       catch: promise.catch.bind(promise),
-      cancel() {
-        isCancelled = true;
-        return directorySearch.cancel();
+      cancel () {
+        isCancelled = true
+        return directorySearch.cancel()
       }
-    };
+    }
   }
-});
+})

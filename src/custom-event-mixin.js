@@ -1,3 +1,10 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -5,28 +12,28 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let CustomEventMixin;
+let CustomEventMixin
 module.exports =
 (CustomEventMixin = {
-  componentWillMount() {
-    return this.customEventListeners = {};
+  componentWillMount () {
+    return this.customEventListeners = {}
   },
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     for (let listeners = 0; listeners < this.customEventListeners.length; listeners++) {
-      const name = this.customEventListeners[listeners];
+      const name = this.customEventListeners[listeners]
       for (let listener of Array.from(listeners)) {
-        this.getDOMNode().removeEventListener(name, listener);
+        this.getDOMNode().removeEventListener(name, listener)
       }
     }
   },
 
-  addCustomEventListeners(customEventListeners) {
+  addCustomEventListeners (customEventListeners) {
     for (let name in customEventListeners) {
-      const listener = customEventListeners[name];
-      if (this.customEventListeners[name] == null) { this.customEventListeners[name] = []; }
-      this.customEventListeners[name].push(listener);
-      this.getDOMNode().addEventListener(name, listener);
+      const listener = customEventListeners[name]
+      if (this.customEventListeners[name] == null) { this.customEventListeners[name] = [] }
+      this.customEventListeners[name].push(listener)
+      this.getDOMNode().addEventListener(name, listener)
     }
   }
-});
+})

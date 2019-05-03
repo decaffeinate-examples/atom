@@ -1,3 +1,10 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -7,16 +14,16 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let ContextMenuManager;
-const path = require('path');
-const CSON = require('season');
-const fs = require('fs-plus');
-const {calculateSpecificity, validateSelector} = require('clear-cut');
-const {Disposable} = require('event-kit');
-const {remote} = require('electron');
-const MenuHelpers = require('./menu-helpers');
+let ContextMenuManager
+const path = require('path')
+const CSON = require('season')
+const fs = require('fs-plus')
+const { calculateSpecificity, validateSelector } = require('clear-cut')
+const { Disposable } = require('event-kit')
+const { remote } = require('electron')
+const MenuHelpers = require('./menu-helpers')
 
-const platformContextMenu = __guard__(__guard__(require('../package.json'), x1 => x1._atomMenu), x => x['context-menu']);
+const platformContextMenu = __guard__(__guard__(require('../package.json'), x1 => x1._atomMenu), x => x['context-menu'])
 
 // Extended: Provides a registry for commands that you'd like to appear in the
 // context menu.
@@ -50,27 +57,27 @@ const platformContextMenu = __guard__(__guard__(require('../package.json'), x1 =
 // {::add} for more information.
 module.exports =
 (ContextMenuManager = class ContextMenuManager {
-  constructor({keymapManager}) {
-    this.keymapManager = keymapManager;
-    this.definitions = {'.overlayer': []}; // TODO: Remove once color picker package stops touching private data
-    this.clear();
+  constructor ({ keymapManager }) {
+    this.keymapManager = keymapManager
+    this.definitions = { '.overlayer': [] } // TODO: Remove once color picker package stops touching private data
+    this.clear()
 
-    this.keymapManager.onDidLoadBundledKeymaps(() => this.loadPlatformItems());
+    this.keymapManager.onDidLoadBundledKeymaps(() => this.loadPlatformItems())
   }
 
-  initialize({resourcePath, devMode}) {
-    this.resourcePath = resourcePath;
-    this.devMode = devMode;
+  initialize ({ resourcePath, devMode }) {
+    this.resourcePath = resourcePath
+    this.devMode = devMode
   }
 
-  loadPlatformItems() {
+  loadPlatformItems () {
     if (platformContextMenu != null) {
-      return this.add(platformContextMenu, this.devMode != null ? this.devMode : false);
+      return this.add(platformContextMenu, this.devMode != null ? this.devMode : false)
     } else {
-      const menusDirPath = path.join(this.resourcePath, 'menus');
-      const platformMenuPath = fs.resolve(menusDirPath, process.platform, ['cson', 'json']);
-      const map = CSON.readFileSync(platformMenuPath);
-      return this.add(map['context-menu']);
+      const menusDirPath = path.join(this.resourcePath, 'menus')
+      const platformMenuPath = fs.resolve(menusDirPath, process.platform, ['cson', 'json'])
+      const map = CSON.readFileSync(platformMenuPath)
+      return this.add(map['context-menu'])
     }
   }
 
@@ -126,162 +133,162 @@ module.exports =
   //
   // Returns a {Disposable} on which `.dispose()` can be called to remove the
   // added menu items.
-  add(itemsBySelector, throwOnInvalidSelector) {
-    let itemSet;
-    if (throwOnInvalidSelector == null) { throwOnInvalidSelector = true; }
-    const addedItemSets = [];
+  add (itemsBySelector, throwOnInvalidSelector) {
+    let itemSet
+    if (throwOnInvalidSelector == null) { throwOnInvalidSelector = true }
+    const addedItemSets = []
 
     for (let selector in itemsBySelector) {
-      const items = itemsBySelector[selector];
-      if (throwOnInvalidSelector) { validateSelector(selector); }
-      itemSet = new ContextMenuItemSet(selector, items);
-      addedItemSets.push(itemSet);
-      this.itemSets.push(itemSet);
+      const items = itemsBySelector[selector]
+      if (throwOnInvalidSelector) { validateSelector(selector) }
+      itemSet = new ContextMenuItemSet(selector, items)
+      addedItemSets.push(itemSet)
+      this.itemSets.push(itemSet)
     }
 
     return new Disposable(() => {
       for (itemSet of Array.from(addedItemSets)) {
-        this.itemSets.splice(this.itemSets.indexOf(itemSet), 1);
+        this.itemSets.splice(this.itemSets.indexOf(itemSet), 1)
       }
-    });
+    })
   }
 
-  templateForElement(target) {
-    return this.templateForEvent({target});
+  templateForElement (target) {
+    return this.templateForEvent({ target })
   }
 
-  templateForEvent(event) {
-    const template = [];
-    let currentTarget = event.target;
+  templateForEvent (event) {
+    const template = []
+    let currentTarget = event.target
 
     while (currentTarget != null) {
-      var item;
-      const currentTargetItems = [];
+      var item
+      const currentTargetItems = []
       const matchingItemSets =
-        this.itemSets.filter(itemSet => currentTarget.webkitMatchesSelector(itemSet.selector));
+        this.itemSets.filter(itemSet => currentTarget.webkitMatchesSelector(itemSet.selector))
 
       for (let itemSet of Array.from(matchingItemSets)) {
         for (item of Array.from(itemSet.items)) {
-          const itemForEvent = this.cloneItemForEvent(item, event);
+          const itemForEvent = this.cloneItemForEvent(item, event)
           if (itemForEvent) {
-            MenuHelpers.merge(currentTargetItems, itemForEvent, itemSet.specificity);
+            MenuHelpers.merge(currentTargetItems, itemForEvent, itemSet.specificity)
           }
         }
       }
 
       for (item of Array.from(currentTargetItems)) {
-        MenuHelpers.merge(template, item, false);
+        MenuHelpers.merge(template, item, false)
       }
 
-      currentTarget = currentTarget.parentElement;
+      currentTarget = currentTarget.parentElement
     }
 
-    this.pruneRedundantSeparators(template);
+    this.pruneRedundantSeparators(template)
 
-    return template;
+    return template
   }
 
-  pruneRedundantSeparators(menu) {
-    let keepNextItemIfSeparator = false;
-    let index = 0;
+  pruneRedundantSeparators (menu) {
+    let keepNextItemIfSeparator = false
+    let index = 0
     return (() => {
-      const result = [];
+      const result = []
       while (index < menu.length) {
         if (menu[index].type === 'separator') {
           if (!keepNextItemIfSeparator || (index === (menu.length - 1))) {
-            result.push(menu.splice(index, 1));
+            result.push(menu.splice(index, 1))
           } else {
-            result.push(index++);
+            result.push(index++)
           }
         } else {
-          keepNextItemIfSeparator = true;
-          result.push(index++);
+          keepNextItemIfSeparator = true
+          result.push(index++)
         }
       }
-      return result;
-    })();
+      return result
+    })()
   }
 
   // Returns an object compatible with `::add()` or `null`.
-  cloneItemForEvent(item, event) {
-    if (item.devMode && !this.devMode) { return null; }
-    item = Object.create(item);
+  cloneItemForEvent (item, event) {
+    if (item.devMode && !this.devMode) { return null }
+    item = Object.create(item)
     if (typeof item.shouldDisplay === 'function') {
-      if (!item.shouldDisplay(event)) { return null; }
+      if (!item.shouldDisplay(event)) { return null }
     }
     if (typeof item.created === 'function') {
-      item.created(event);
+      item.created(event)
     }
     if (Array.isArray(item.submenu)) {
       item.submenu = item.submenu
         .map(submenuItem => this.cloneItemForEvent(submenuItem, event))
-        .filter(submenuItem => submenuItem !== null);
+        .filter(submenuItem => submenuItem !== null)
     }
-    return item;
+    return item
   }
 
-  convertLegacyItemsBySelector(legacyItemsBySelector, devMode) {
-    const itemsBySelector = {};
+  convertLegacyItemsBySelector (legacyItemsBySelector, devMode) {
+    const itemsBySelector = {}
 
     for (let selector in legacyItemsBySelector) {
-      const commandsByLabel = legacyItemsBySelector[selector];
-      itemsBySelector[selector] = this.convertLegacyItems(commandsByLabel, devMode);
+      const commandsByLabel = legacyItemsBySelector[selector]
+      itemsBySelector[selector] = this.convertLegacyItems(commandsByLabel, devMode)
     }
 
-    return itemsBySelector;
+    return itemsBySelector
   }
 
-  convertLegacyItems(legacyItems, devMode) {
-    const items = [];
+  convertLegacyItems (legacyItems, devMode) {
+    const items = []
 
     for (let label in legacyItems) {
-      const commandOrSubmenu = legacyItems[label];
+      const commandOrSubmenu = legacyItems[label]
       if (typeof commandOrSubmenu === 'object') {
-        items.push({label, submenu: this.convertLegacyItems(commandOrSubmenu, devMode), devMode});
+        items.push({ label, submenu: this.convertLegacyItems(commandOrSubmenu, devMode), devMode })
       } else if (commandOrSubmenu === '-') {
-        items.push({type: 'separator'});
+        items.push({ type: 'separator' })
       } else {
-        items.push({label, command: commandOrSubmenu, devMode});
+        items.push({ label, command: commandOrSubmenu, devMode })
       }
     }
 
-    return items;
+    return items
   }
 
-  showForEvent(event) {
-    this.activeElement = event.target;
-    const menuTemplate = this.templateForEvent(event);
+  showForEvent (event) {
+    this.activeElement = event.target
+    const menuTemplate = this.templateForEvent(event)
 
-    if (!((menuTemplate != null ? menuTemplate.length : undefined) > 0)) { return; }
-    remote.getCurrentWindow().emit('context-menu', menuTemplate);
+    if (!((menuTemplate != null ? menuTemplate.length : undefined) > 0)) { return }
+    remote.getCurrentWindow().emit('context-menu', menuTemplate)
   }
 
-  clear() {
-    this.activeElement = null;
-    this.itemSets = [];
+  clear () {
+    this.activeElement = null
+    this.itemSets = []
     const inspectElement = {
       'atom-workspace': [{
         label: 'Inspect Element',
         command: 'application:inspect',
         devMode: true,
-        created(event) {
-          const {pageX, pageY} = event;
-          return this.commandDetail = {x: pageX, y: pageY};
+        created (event) {
+          const { pageX, pageY } = event
+          return this.commandDetail = { x: pageX, y: pageY }
         }
       }]
-    };
-    return this.add(inspectElement, false);
+    }
+    return this.add(inspectElement, false)
   }
-});
+})
 
 class ContextMenuItemSet {
-  constructor(selector, items) {
-    this.selector = selector;
-    this.items = items;
-    this.specificity = calculateSpecificity(this.selector);
+  constructor (selector, items) {
+    this.selector = selector
+    this.items = items
+    this.specificity = calculateSpecificity(this.selector)
   }
 }
 
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

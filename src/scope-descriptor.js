@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -22,14 +28,14 @@
 //
 // See the [scopes and scope descriptor guide](http://flight-manual.atom.io/behind-atom/sections/scoped-settings-scopes-and-scope-descriptors/)
 // for more information.
-let ScopeDescriptor;
+let ScopeDescriptor
 module.exports =
 (ScopeDescriptor = class ScopeDescriptor {
-  static fromObject(scopes) {
+  static fromObject (scopes) {
     if (scopes instanceof ScopeDescriptor) {
-      return scopes;
+      return scopes
     } else {
-      return new ScopeDescriptor({scopes});
+      return new ScopeDescriptor({ scopes })
     }
   }
 
@@ -41,34 +47,35 @@ module.exports =
   //
   // * `object` {Object}
   //   * `scopes` {Array} of {String}s
-  constructor({scopes}) {
-    this.scopes = scopes;
+  constructor ({ scopes }) {
+    this.scopes = scopes
   }
 
   // Public: Returns an {Array} of {String}s
-  getScopesArray() { return this.scopes; }
+  getScopesArray () { return this.scopes }
 
-  getScopeChain() {
+  getScopeChain () {
     return this.scopes
-      .map(function(scope) {
-        if (scope[0] !== '.') { scope = `.${scope}`; }
-        return scope;}).join(' ');
+      .map(function (scope) {
+        if (scope[0] !== '.') { scope = `.${scope}` }
+        return scope
+      }).join(' ')
   }
 
-  toString() {
-    return this.getScopeChain();
+  toString () {
+    return this.getScopeChain()
   }
 
-  isEqual(other) {
+  isEqual (other) {
     if (this.scopes.length !== other.scopes.length) {
-      return false;
+      return false
     }
     for (let i = 0; i < this.scopes.length; i++) {
-      const scope = this.scopes[i];
+      const scope = this.scopes[i]
       if (scope !== other.scopes[i]) {
-        return false;
+        return false
       }
     }
-    return true;
+    return true
   }
-});
+})

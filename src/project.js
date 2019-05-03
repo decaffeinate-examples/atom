@@ -1,3 +1,16 @@
+/** @babel */
+/* eslint-disable
+    constructor-super,
+    no-cond-assign,
+    no-constant-condition,
+    no-eval,
+    no-return-assign,
+    no-this-before-super,
+    no-undef,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS001: Remove Babel/TypeScript constructor workaround
@@ -9,17 +22,17 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Project;
-const path = require('path');
+let Project
+const path = require('path')
 
-const _ = require('underscore-plus');
-const fs = require('fs-plus');
-const {Emitter, Disposable} = require('event-kit');
-const TextBuffer = require('text-buffer');
+const _ = require('underscore-plus')
+const fs = require('fs-plus')
+const { Emitter, Disposable } = require('event-kit')
+const TextBuffer = require('text-buffer')
 
-const DefaultDirectoryProvider = require('./default-directory-provider');
-const Model = require('./model');
-const GitRepositoryProvider = require('./git-repository-provider');
+const DefaultDirectoryProvider = require('./default-directory-provider')
+const Model = require('./model')
+const GitRepositoryProvider = require('./git-repository-provider')
 
 // Extended: Represents a project that's opened in Atom.
 //
@@ -30,93 +43,97 @@ module.exports =
   Section: Construction and Destruction
   */
 
-  constructor({notificationManager, packageManager, config, applicationDelegate}) {
+  constructor ({ notificationManager, packageManager, config, applicationDelegate }) {
     {
       // Hack: trick Babel/TypeScript into allowing this before super.
-      if (false) { super(); }
-      let thisFn = (() => { return this; }).toString();
-      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
-      eval(`${thisName} = this;`);
+      if (false) { super() }
+      let thisFn = (() => { return this }).toString()
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1]
+      eval(`${thisName} = this;`)
     }
-    this.notificationManager = notificationManager;
-    this.applicationDelegate = applicationDelegate;
-    this.emitter = new Emitter;
-    this.buffers = [];
-    this.rootDirectories = [];
-    this.repositories = [];
-    this.directoryProviders = [];
-    this.defaultDirectoryProvider = new DefaultDirectoryProvider();
-    this.repositoryPromisesByPath = new Map();
-    this.repositoryProviders = [new GitRepositoryProvider(this, config)];
-    this.loadPromisesByPath = {};
-    this.consumeServices(packageManager);
+    this.notificationManager = notificationManager
+    this.applicationDelegate = applicationDelegate
+    this.emitter = new Emitter()
+    this.buffers = []
+    this.rootDirectories = []
+    this.repositories = []
+    this.directoryProviders = []
+    this.defaultDirectoryProvider = new DefaultDirectoryProvider()
+    this.repositoryPromisesByPath = new Map()
+    this.repositoryProviders = [new GitRepositoryProvider(this, config)]
+    this.loadPromisesByPath = {}
+    this.consumeServices(packageManager)
   }
 
-  destroyed() {
-    for (let buffer of Array.from(this.buffers.slice())) { buffer.destroy(); }
-    for (let repository of Array.from(this.repositories.slice())) { if (repository != null) {
-      repository.destroy();
-    } }
-    this.rootDirectories = [];
-    return this.repositories = [];
+  destroyed () {
+    for (let buffer of Array.from(this.buffers.slice())) { buffer.destroy() }
+    for (let repository of Array.from(this.repositories.slice())) {
+      if (repository != null) {
+        repository.destroy()
+      }
+    }
+    this.rootDirectories = []
+    return this.repositories = []
   }
 
-  reset(packageManager) {
-    this.emitter.dispose();
-    this.emitter = new Emitter;
+  reset (packageManager) {
+    this.emitter.dispose()
+    this.emitter = new Emitter()
 
-    for (let buffer of Array.from(this.buffers)) { if (buffer != null) {
-      buffer.destroy();
-    } }
-    this.buffers = [];
-    this.setPaths([]);
-    this.loadPromisesByPath = {};
-    return this.consumeServices(packageManager);
+    for (let buffer of Array.from(this.buffers)) {
+      if (buffer != null) {
+        buffer.destroy()
+      }
+    }
+    this.buffers = []
+    this.setPaths([])
+    this.loadPromisesByPath = {}
+    return this.consumeServices(packageManager)
   }
 
-  destroyUnretainedBuffers() {
-    for (let buffer of Array.from(this.getBuffers())) { if (!buffer.isRetained()) { buffer.destroy(); } }
+  destroyUnretainedBuffers () {
+    for (let buffer of Array.from(this.getBuffers())) { if (!buffer.isRetained()) { buffer.destroy() } }
   }
 
   /*
   Section: Serialization
   */
 
-  deserialize(state) {
-    const bufferPromises = [];
+  deserialize (state) {
+    const bufferPromises = []
     for (let bufferState of Array.from(state.buffers)) {
-      if (fs.isDirectorySync(bufferState.filePath)) { continue; }
+      if (fs.isDirectorySync(bufferState.filePath)) { continue }
       if (bufferState.filePath) {
         try {
-          fs.closeSync(fs.openSync(bufferState.filePath, 'r'));
+          fs.closeSync(fs.openSync(bufferState.filePath, 'r'))
         } catch (error) {
-          if (error.code !== 'ENOENT') { continue; }
+          if (error.code !== 'ENOENT') { continue }
         }
       }
       if (bufferState.shouldDestroyOnFileDelete == null) {
-        bufferState.shouldDestroyOnFileDelete = () => atom.config.get('core.closeDeletedFileTabs');
+        bufferState.shouldDestroyOnFileDelete = () => atom.config.get('core.closeDeletedFileTabs')
       }
-      bufferPromises.push(TextBuffer.deserialize(bufferState));
+      bufferPromises.push(TextBuffer.deserialize(bufferState))
     }
     return Promise.all(bufferPromises).then(buffers => {
-      this.buffers = buffers;
-      for (let buffer of Array.from(this.buffers)) { this.subscribeToBuffer(buffer); }
-      return this.setPaths(state.paths);
-    });
+      this.buffers = buffers
+      for (let buffer of Array.from(this.buffers)) { this.subscribeToBuffer(buffer) }
+      return this.setPaths(state.paths)
+    })
   }
 
-  serialize(options) {
-    if (options == null) { options = {}; }
+  serialize (options) {
+    if (options == null) { options = {} }
     return {
       deserializer: 'Project',
       paths: this.getPaths(),
-      buffers: _.compact(this.buffers.map(function(buffer) {
+      buffers: _.compact(this.buffers.map(function (buffer) {
         if (buffer.isRetained()) {
-          const isUnloading = options.isUnloading === true;
-          return buffer.serialize({markerLayers: isUnloading, history: isUnloading});
+          const isUnloading = options.isUnloading === true
+          return buffer.serialize({ markerLayers: isUnloading, history: isUnloading })
         }
       }))
-    };
+    }
   }
 
   /*
@@ -129,8 +146,8 @@ module.exports =
   //    * `projectPaths` An {Array} of {String} project paths.
   //
   // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  onDidChangePaths(callback) {
-    return this.emitter.on('did-change-paths', callback);
+  onDidChangePaths (callback) {
+    return this.emitter.on('did-change-paths', callback)
   }
 
   // Public: Invoke the given callback when a text buffer is added to the
@@ -140,8 +157,8 @@ module.exports =
   //   * `buffer` A {TextBuffer} item.
   //
   // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  onDidAddBuffer(callback) {
-    return this.emitter.on('did-add-buffer', callback);
+  onDidAddBuffer (callback) {
+    return this.emitter.on('did-add-buffer', callback)
   }
 
   // Public: Invoke the given callback with all current and future text
@@ -151,9 +168,9 @@ module.exports =
   //   * `buffer` A {TextBuffer} item.
   //
   // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  observeBuffers(callback) {
-    for (let buffer of Array.from(this.getBuffers())) { callback(buffer); }
-    return this.onDidAddBuffer(callback);
+  observeBuffers (callback) {
+    for (let buffer of Array.from(this.getBuffers())) { callback(buffer) }
+    return this.onDidAddBuffer(callback)
   }
 
   /*
@@ -170,7 +187,7 @@ module.exports =
   // Promise.all(atom.project.getDirectories().map(
   //     atom.project.repositoryForDirectory.bind(atom.project)))
   // ```
-  getRepositories() { return this.repositories; }
+  getRepositories () { return this.repositories }
 
   // Public: Get the repository for a given directory asynchronously.
   //
@@ -179,26 +196,26 @@ module.exports =
   // Returns a {Promise} that resolves with either:
   // * {Repository} if a repository can be created for the given directory
   // * `null` if no repository can be created for the given directory.
-  repositoryForDirectory(directory) {
-    const pathForDirectory = directory.getRealPathSync();
-    let promise = this.repositoryPromisesByPath.get(pathForDirectory);
+  repositoryForDirectory (directory) {
+    const pathForDirectory = directory.getRealPathSync()
+    let promise = this.repositoryPromisesByPath.get(pathForDirectory)
     if (!promise) {
-      const promises = this.repositoryProviders.map(provider => provider.repositoryForDirectory(directory));
+      const promises = this.repositoryProviders.map(provider => provider.repositoryForDirectory(directory))
       promise = Promise.all(promises).then(repositories => {
-        let left;
-        const repo = (left = _.find(repositories, repo => repo != null)) != null ? left : null;
+        let left
+        const repo = (left = _.find(repositories, repo => repo != null)) != null ? left : null
 
         // If no repository is found, remove the entry in for the directory in
         // @repositoryPromisesByPath in case some other RepositoryProvider is
         // registered in the future that could supply a Repository for the
         // directory.
-        if (repo == null) { this.repositoryPromisesByPath.delete(pathForDirectory); }
-        __guardMethod__(repo, 'onDidDestroy', o => o.onDidDestroy(() => this.repositoryPromisesByPath.delete(pathForDirectory)));
-        return repo;
-      });
-      this.repositoryPromisesByPath.set(pathForDirectory, promise);
+        if (repo == null) { this.repositoryPromisesByPath.delete(pathForDirectory) }
+        __guardMethod__(repo, 'onDidDestroy', o => o.onDidDestroy(() => this.repositoryPromisesByPath.delete(pathForDirectory)))
+        return repo
+      })
+      this.repositoryPromisesByPath.set(pathForDirectory, promise)
     }
-    return promise;
+    return promise
   }
 
   /*
@@ -207,112 +224,116 @@ module.exports =
 
   // Public: Get an {Array} of {String}s containing the paths of the project's
   // directories.
-  getPaths() { return Array.from(this.rootDirectories).map((rootDirectory) => rootDirectory.getPath()); }
+  getPaths () { return Array.from(this.rootDirectories).map((rootDirectory) => rootDirectory.getPath()) }
 
   // Public: Set the paths of the project's directories.
   //
   // * `projectPaths` {Array} of {String} paths.
-  setPaths(projectPaths) {
-    for (let repository of Array.from(this.repositories)) { if (repository != null) {
-      repository.destroy();
-    } }
-    this.rootDirectories = [];
-    this.repositories = [];
+  setPaths (projectPaths) {
+    for (let repository of Array.from(this.repositories)) {
+      if (repository != null) {
+        repository.destroy()
+      }
+    }
+    this.rootDirectories = []
+    this.repositories = []
 
-    for (let projectPath of Array.from(projectPaths)) { this.addPath(projectPath, {emitEvent: false}); }
+    for (let projectPath of Array.from(projectPaths)) { this.addPath(projectPath, { emitEvent: false }) }
 
-    return this.emitter.emit('did-change-paths', projectPaths);
+    return this.emitter.emit('did-change-paths', projectPaths)
   }
 
   // Public: Add a path to the project's list of root paths
   //
   // * `projectPath` {String} The path to the directory to add.
-  addPath(projectPath, options) {
-    const directory = this.getDirectoryForProjectPath(projectPath);
-    if (!directory.existsSync()) { return; }
+  addPath (projectPath, options) {
+    const directory = this.getDirectoryForProjectPath(projectPath)
+    if (!directory.existsSync()) { return }
     for (let existingDirectory of Array.from(this.getDirectories())) {
-      if (existingDirectory.getPath() === directory.getPath()) { return; }
+      if (existingDirectory.getPath() === directory.getPath()) { return }
     }
 
-    this.rootDirectories.push(directory);
+    this.rootDirectories.push(directory)
 
-    let repo = null;
+    let repo = null
     for (let provider of Array.from(this.repositoryProviders)) {
-      if (repo = typeof provider.repositoryForDirectorySync === 'function' ? provider.repositoryForDirectorySync(directory) : undefined) { break; }
+      if (repo = typeof provider.repositoryForDirectorySync === 'function' ? provider.repositoryForDirectorySync(directory) : undefined) { break }
     }
-    this.repositories.push(repo != null ? repo : null);
+    this.repositories.push(repo != null ? repo : null)
 
     if ((options != null ? options.emitEvent : undefined) !== false) {
-      return this.emitter.emit('did-change-paths', this.getPaths());
+      return this.emitter.emit('did-change-paths', this.getPaths())
     }
   }
 
-  getDirectoryForProjectPath(projectPath) {
-    let directory = null;
+  getDirectoryForProjectPath (projectPath) {
+    let directory = null
     for (let provider of Array.from(this.directoryProviders)) {
-      if (directory = typeof provider.directoryForURISync === 'function' ? provider.directoryForURISync(projectPath) : undefined) { break; }
+      if (directory = typeof provider.directoryForURISync === 'function' ? provider.directoryForURISync(projectPath) : undefined) { break }
     }
-    if (directory == null) { directory = this.defaultDirectoryProvider.directoryForURISync(projectPath); }
-    return directory;
+    if (directory == null) { directory = this.defaultDirectoryProvider.directoryForURISync(projectPath) }
+    return directory
   }
 
   // Public: remove a path from the project's list of root paths.
   //
   // * `projectPath` {String} The path to remove.
-  removePath(projectPath) {
+  removePath (projectPath) {
     // The projectPath may be a URI, in which case it should not be normalized.
-    let needle;
+    let needle
     if ((needle = projectPath, !Array.from(this.getPaths()).includes(needle))) {
-      projectPath = this.defaultDirectoryProvider.normalizePath(projectPath);
+      projectPath = this.defaultDirectoryProvider.normalizePath(projectPath)
     }
 
-    let indexToRemove = null;
+    let indexToRemove = null
     for (let i = 0; i < this.rootDirectories.length; i++) {
-      const directory = this.rootDirectories[i];
+      const directory = this.rootDirectories[i]
       if (directory.getPath() === projectPath) {
-        indexToRemove = i;
-        break;
+        indexToRemove = i
+        break
       }
     }
 
     if (indexToRemove != null) {
-      const [removedDirectory] = Array.from(this.rootDirectories.splice(indexToRemove, 1));
-      const [removedRepository] = Array.from(this.repositories.splice(indexToRemove, 1));
-      if (!Array.from(this.repositories).includes(removedRepository)) { if (removedRepository != null) {
-        removedRepository.destroy();
-      } }
-      this.emitter.emit("did-change-paths", this.getPaths());
-      return true;
+      const [removedDirectory] = Array.from(this.rootDirectories.splice(indexToRemove, 1))
+      const [removedRepository] = Array.from(this.repositories.splice(indexToRemove, 1))
+      if (!Array.from(this.repositories).includes(removedRepository)) {
+        if (removedRepository != null) {
+          removedRepository.destroy()
+        }
+      }
+      this.emitter.emit('did-change-paths', this.getPaths())
+      return true
     } else {
-      return false;
+      return false
     }
   }
 
   // Public: Get an {Array} of {Directory}s associated with this project.
-  getDirectories() {
-    return this.rootDirectories;
+  getDirectories () {
+    return this.rootDirectories
   }
 
-  resolvePath(uri) {
-    if (!uri) { return; }
+  resolvePath (uri) {
+    if (!uri) { return }
 
     if ((uri != null ? uri.match(/[A-Za-z0-9+-.]+:\/\//) : undefined)) { // leave path alone if it has a scheme
-      return uri;
+      return uri
     } else {
-      let projectPath;
+      let projectPath
       if (fs.isAbsolute(uri)) {
-        return this.defaultDirectoryProvider.normalizePath(fs.resolveHome(uri));
+        return this.defaultDirectoryProvider.normalizePath(fs.resolveHome(uri))
       // TODO: what should we do here when there are multiple directories?
       } else if ((projectPath = this.getPaths()[0])) {
-        return this.defaultDirectoryProvider.normalizePath(fs.resolveHome(path.join(projectPath, uri)));
+        return this.defaultDirectoryProvider.normalizePath(fs.resolveHome(path.join(projectPath, uri)))
       } else {
-        return undefined;
+        return undefined
       }
     }
   }
 
-  relativize(fullPath) {
-    return this.relativizePath(fullPath)[1];
+  relativize (fullPath) {
+    return this.relativizePath(fullPath)[1]
   }
 
   // Public: Get the path to the project directory that contains the given path,
@@ -325,17 +346,17 @@ module.exports =
   //   given path, or `null` if none is found.
   // * `relativePath` {String} The relative path from the project directory to
   //   the given path.
-  relativizePath(fullPath) {
-    let result = [null, fullPath];
+  relativizePath (fullPath) {
+    let result = [null, fullPath]
     if (fullPath != null) {
       for (let rootDirectory of Array.from(this.rootDirectories)) {
-        const relativePath = rootDirectory.relativize(fullPath);
+        const relativePath = rootDirectory.relativize(fullPath)
         if ((relativePath != null ? relativePath.length : undefined) < result[1].length) {
-          result = [rootDirectory.getPath(), relativePath];
+          result = [rootDirectory.getPath(), relativePath]
         }
       }
     }
-    return result;
+    return result
   }
 
   // Public: Determines whether the given path (real or symbolic) is inside the
@@ -365,71 +386,71 @@ module.exports =
   // * `pathToCheck` {String} path
   //
   // Returns whether the path is inside the project's root directory.
-  contains(pathToCheck) {
-    return this.rootDirectories.some(dir => dir.contains(pathToCheck));
+  contains (pathToCheck) {
+    return this.rootDirectories.some(dir => dir.contains(pathToCheck))
   }
 
   /*
   Section: Private
   */
 
-  consumeServices({serviceHub}) {
+  consumeServices ({ serviceHub }) {
     serviceHub.consume(
       'atom.directory-provider',
       '^0.1.0',
       provider => {
-        this.directoryProviders.unshift(provider);
+        this.directoryProviders.unshift(provider)
         return new Disposable(() => {
-          return this.directoryProviders.splice(this.directoryProviders.indexOf(provider), 1);
-      });
-    });
+          return this.directoryProviders.splice(this.directoryProviders.indexOf(provider), 1)
+        })
+      })
 
     return serviceHub.consume(
       'atom.repository-provider',
       '^0.1.0',
       provider => {
-        this.repositoryProviders.unshift(provider);
-        if (Array.from(this.repositories).includes(null)) { this.setPaths(this.getPaths()); }
+        this.repositoryProviders.unshift(provider)
+        if (Array.from(this.repositories).includes(null)) { this.setPaths(this.getPaths()) }
         return new Disposable(() => {
-          return this.repositoryProviders.splice(this.repositoryProviders.indexOf(provider), 1);
-      });
-    });
+          return this.repositoryProviders.splice(this.repositoryProviders.indexOf(provider), 1)
+        })
+      })
   }
 
   // Retrieves all the {TextBuffer}s in the project; that is, the
   // buffers for all open files.
   //
   // Returns an {Array} of {TextBuffer}s.
-  getBuffers() {
-    return this.buffers.slice();
+  getBuffers () {
+    return this.buffers.slice()
   }
 
   // Is the buffer for the given path modified?
-  isPathModified(filePath) {
-    return __guard__(this.findBufferForPath(this.resolvePath(filePath)), x => x.isModified());
+  isPathModified (filePath) {
+    return __guard__(this.findBufferForPath(this.resolvePath(filePath)), x => x.isModified())
   }
 
-  findBufferForPath(filePath) {
-    return _.find(this.buffers, buffer => buffer.getPath() === filePath);
+  findBufferForPath (filePath) {
+    return _.find(this.buffers, buffer => buffer.getPath() === filePath)
   }
 
-  findBufferForId(id) {
-    return _.find(this.buffers, buffer => buffer.getId() === id);
+  findBufferForId (id) {
+    return _.find(this.buffers, buffer => buffer.getId() === id)
   }
 
   // Only to be used in specs
-  bufferForPathSync(filePath) {
-    let existingBuffer;
-    const absoluteFilePath = this.resolvePath(filePath);
-    if (filePath) { existingBuffer = this.findBufferForPath(absoluteFilePath); }
-    return existingBuffer != null ? existingBuffer : this.buildBufferSync(absoluteFilePath);
+  bufferForPathSync (filePath) {
+    let existingBuffer
+    const absoluteFilePath = this.resolvePath(filePath)
+    if (filePath) { existingBuffer = this.findBufferForPath(absoluteFilePath) }
+    return existingBuffer != null ? existingBuffer : this.buildBufferSync(absoluteFilePath)
   }
 
   // Only to be used when deserializing
-  bufferForIdSync(id) {
-    let existingBuffer;
-    if (id) { existingBuffer = this.findBufferForId(id); }
-    return existingBuffer != null ? existingBuffer : this.buildBufferSync();
+  bufferForIdSync (id) {
+    let existingBuffer
+    if (id) { existingBuffer = this.findBufferForId(id) }
+    return existingBuffer != null ? existingBuffer : this.buildBufferSync()
   }
 
   // Given a file path, this retrieves or creates a new {TextBuffer}.
@@ -440,31 +461,31 @@ module.exports =
   // * `filePath` A {String} representing a path. If `null`, an "Untitled" buffer is created.
   //
   // Returns a {Promise} that resolves to the {TextBuffer}.
-  bufferForPath(absoluteFilePath) {
-    let existingBuffer;
-    if (absoluteFilePath != null) { existingBuffer = this.findBufferForPath(absoluteFilePath); }
+  bufferForPath (absoluteFilePath) {
+    let existingBuffer
+    if (absoluteFilePath != null) { existingBuffer = this.findBufferForPath(absoluteFilePath) }
     if (existingBuffer) {
-      return Promise.resolve(existingBuffer);
+      return Promise.resolve(existingBuffer)
     } else {
-      return this.buildBuffer(absoluteFilePath);
+      return this.buildBuffer(absoluteFilePath)
     }
   }
 
-  shouldDestroyBufferOnFileDelete() {
-    return atom.config.get('core.closeDeletedFileTabs');
+  shouldDestroyBufferOnFileDelete () {
+    return atom.config.get('core.closeDeletedFileTabs')
   }
 
   // Still needed when deserializing a tokenized buffer
-  buildBufferSync(absoluteFilePath) {
-    let buffer;
-    const params = {shouldDestroyOnFileDelete: this.shouldDestroyBufferOnFileDelete};
+  buildBufferSync (absoluteFilePath) {
+    let buffer
+    const params = { shouldDestroyOnFileDelete: this.shouldDestroyBufferOnFileDelete }
     if (absoluteFilePath != null) {
-      buffer = TextBuffer.loadSync(absoluteFilePath, params);
+      buffer = TextBuffer.loadSync(absoluteFilePath, params)
     } else {
-      buffer = new TextBuffer(params);
+      buffer = new TextBuffer(params)
     }
-    this.addBuffer(buffer);
-    return buffer;
+    this.addBuffer(buffer)
+    return buffer
   }
 
   // Given a file path, this sets its {TextBuffer}.
@@ -473,78 +494,77 @@ module.exports =
   // * `text` The {String} text to use as a buffer.
   //
   // Returns a {Promise} that resolves to the {TextBuffer}.
-  buildBuffer(absoluteFilePath) {
-    let promise;
-    const params = {shouldDestroyOnFileDelete: this.shouldDestroyBufferOnFileDelete};
+  buildBuffer (absoluteFilePath) {
+    let promise
+    const params = { shouldDestroyOnFileDelete: this.shouldDestroyBufferOnFileDelete }
     if (absoluteFilePath != null) {
       promise =
         this.loadPromisesByPath[absoluteFilePath] != null ? this.loadPromisesByPath[absoluteFilePath] : (this.loadPromisesByPath[absoluteFilePath] =
         TextBuffer.load(absoluteFilePath, params).catch(error => {
-          delete this.loadPromisesByPath[absoluteFilePath];
-          throw error;
-        }));
+          delete this.loadPromisesByPath[absoluteFilePath]
+          throw error
+        }))
     } else {
-      promise = Promise.resolve(new TextBuffer(params));
+      promise = Promise.resolve(new TextBuffer(params))
     }
     return promise.then(buffer => {
-      delete this.loadPromisesByPath[absoluteFilePath];
-      this.addBuffer(buffer);
-      return buffer;
-    });
+      delete this.loadPromisesByPath[absoluteFilePath]
+      this.addBuffer(buffer)
+      return buffer
+    })
   }
 
-
-  addBuffer(buffer, options) {
-    if (options == null) { options = {}; }
-    return this.addBufferAtIndex(buffer, this.buffers.length, options);
+  addBuffer (buffer, options) {
+    if (options == null) { options = {} }
+    return this.addBufferAtIndex(buffer, this.buffers.length, options)
   }
 
-  addBufferAtIndex(buffer, index, options) {
-    if (options == null) { options = {}; }
-    this.buffers.splice(index, 0, buffer);
-    this.subscribeToBuffer(buffer);
-    this.emitter.emit('did-add-buffer', buffer);
-    return buffer;
+  addBufferAtIndex (buffer, index, options) {
+    if (options == null) { options = {} }
+    this.buffers.splice(index, 0, buffer)
+    this.subscribeToBuffer(buffer)
+    this.emitter.emit('did-add-buffer', buffer)
+    return buffer
   }
 
   // Removes a {TextBuffer} association from the project.
   //
   // Returns the removed {TextBuffer}.
-  removeBuffer(buffer) {
-    const index = this.buffers.indexOf(buffer);
-    if (index !== -1) { return this.removeBufferAtIndex(index); }
+  removeBuffer (buffer) {
+    const index = this.buffers.indexOf(buffer)
+    if (index !== -1) { return this.removeBufferAtIndex(index) }
   }
 
-  removeBufferAtIndex(index, options) {
-    if (options == null) { options = {}; }
-    const [buffer] = Array.from(this.buffers.splice(index, 1));
-    return (buffer != null ? buffer.destroy() : undefined);
+  removeBufferAtIndex (index, options) {
+    if (options == null) { options = {} }
+    const [buffer] = Array.from(this.buffers.splice(index, 1))
+    return (buffer != null ? buffer.destroy() : undefined)
   }
 
-  eachBuffer(...args) {
-    let subscriber;
-    if (args.length > 1) { subscriber = args.shift(); }
-    const callback = args.shift();
+  eachBuffer (...args) {
+    let subscriber
+    if (args.length > 1) { subscriber = args.shift() }
+    const callback = args.shift()
 
-    for (let buffer of Array.from(this.getBuffers())) { callback(buffer); }
+    for (let buffer of Array.from(this.getBuffers())) { callback(buffer) }
     if (subscriber) {
-      return subscriber.subscribe(this, 'buffer-created', buffer => callback(buffer));
+      return subscriber.subscribe(this, 'buffer-created', buffer => callback(buffer))
     } else {
-      return this.on('buffer-created', buffer => callback(buffer));
+      return this.on('buffer-created', buffer => callback(buffer))
     }
   }
 
-  subscribeToBuffer(buffer) {
-    buffer.onWillSave(({path}) => this.applicationDelegate.emitWillSavePath(path));
-    buffer.onDidSave(({path}) => this.applicationDelegate.emitDidSavePath(path));
-    buffer.onDidDestroy(() => this.removeBuffer(buffer));
+  subscribeToBuffer (buffer) {
+    buffer.onWillSave(({ path }) => this.applicationDelegate.emitWillSavePath(path))
+    buffer.onDidSave(({ path }) => this.applicationDelegate.emitDidSavePath(path))
+    buffer.onDidDestroy(() => this.removeBuffer(buffer))
     buffer.onDidChangePath(() => {
       if (!(this.getPaths().length > 0)) {
-        return this.setPaths([path.dirname(buffer.getPath())]);
+        return this.setPaths([path.dirname(buffer.getPath())])
       }
-    });
-    return buffer.onWillThrowWatchError(({error, handle}) => {
-      handle();
+    })
+    return buffer.onWillThrowWatchError(({ error, handle }) => {
+      handle()
       return this.notificationManager.addWarning(`\
 Unable to read file after file \`${error.eventType}\` event.
 Make sure you have permission to access \`${buffer.getPath()}\`.\
@@ -552,18 +572,18 @@ Make sure you have permission to access \`${buffer.getPath()}\`.\
         detail: error.message,
         dismissable: true
       }
-      );
-    });
+      )
+    })
   }
-});
+})
 
-function __guardMethod__(obj, methodName, transform) {
+function __guardMethod__ (obj, methodName, transform) {
   if (typeof obj !== 'undefined' && obj !== null && typeof obj[methodName] === 'function') {
-    return transform(obj, methodName);
+    return transform(obj, methodName)
   } else {
-    return undefined;
+    return undefined
   }
 }
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

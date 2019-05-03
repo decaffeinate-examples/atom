@@ -1,33 +1,39 @@
+/** @babel */
+/* eslint-disable
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const path = require('path');
-const Module = require('module');
-const fs = require('fs-plus');
-const temp = require('temp').track();
-const ModuleCache = require('../src/module-cache');
+const path = require('path')
+const Module = require('module')
+const fs = require('fs-plus')
+const temp = require('temp').track()
+const ModuleCache = require('../src/module-cache')
 
-describe('ModuleCache', function() {
-  beforeEach(() => spyOn(Module, '_findPath').andCallThrough());
+describe('ModuleCache', function () {
+  beforeEach(() => spyOn(Module, '_findPath').andCallThrough())
 
-  afterEach(() => temp.cleanupSync());
+  afterEach(() => temp.cleanupSync())
 
-  it('resolves Electron module paths without hitting the filesystem', function() {
-    const { builtins } = ModuleCache.cache;
-    expect(Object.keys(builtins).length).toBeGreaterThan(0);
+  it('resolves Electron module paths without hitting the filesystem', function () {
+    const { builtins } = ModuleCache.cache
+    expect(Object.keys(builtins).length).toBeGreaterThan(0)
 
     for (let builtinName in builtins) {
-      const builtinPath = builtins[builtinName];
-      expect(require.resolve(builtinName)).toBe(builtinPath);
-      expect(fs.isFileSync(require.resolve(builtinName))).toBeTruthy();
+      const builtinPath = builtins[builtinName]
+      expect(require.resolve(builtinName)).toBe(builtinPath)
+      expect(fs.isFileSync(require.resolve(builtinName))).toBeTruthy()
     }
 
-    return expect(Module._findPath.callCount).toBe(0);
-  });
+    return expect(Module._findPath.callCount).toBe(0)
+  })
 
-  it('resolves relative core paths without hitting the filesystem', function() {
+  it('resolves relative core paths without hitting the filesystem', function () {
     ModuleCache.add(atom.getLoadSettings().resourcePath, {
       _atomModuleCache: {
         extensions: {
@@ -36,13 +42,13 @@ describe('ModuleCache', function() {
           ]
         }
       }
-    });
-    expect(require('./fixtures/module-cache/file.json').foo).toBe('bar');
-    return expect(Module._findPath.callCount).toBe(0);
-  });
+    })
+    expect(require('./fixtures/module-cache/file.json').foo).toBe('bar')
+    return expect(Module._findPath.callCount).toBe(0)
+  })
 
-  it('resolves module paths when a compatible version is provided by core', function() {
-    const packagePath = fs.realpathSync(temp.mkdirSync('atom-package'));
+  it('resolves module paths when a compatible version is provided by core', function () {
+    const packagePath = fs.realpathSync(temp.mkdirSync('atom-package'))
     ModuleCache.add(packagePath, {
       _atomModuleCache: {
         folders: [{
@@ -54,7 +60,7 @@ describe('ModuleCache', function() {
           }
         }]
       }
-    });
+    })
     ModuleCache.add(atom.getLoadSettings().resourcePath, {
       _atomModuleCache: {
         dependencies: [{
@@ -63,22 +69,22 @@ describe('ModuleCache', function() {
           path: path.join('node_modules', 'underscore-plus', 'lib', 'underscore-plus.js')
         }]
       }
-    });
+    })
 
-    const indexPath = path.join(packagePath, 'index.js');
+    const indexPath = path.join(packagePath, 'index.js')
     fs.writeFileSync(indexPath, `\
 exports.load = function() { require('underscore-plus'); };\
 `
-    );
+    )
 
-    const packageMain = require(indexPath);
-    Module._findPath.reset();
-    packageMain.load();
-    return expect(Module._findPath.callCount).toBe(0);
-  });
+    const packageMain = require(indexPath)
+    Module._findPath.reset()
+    packageMain.load()
+    return expect(Module._findPath.callCount).toBe(0)
+  })
 
-  return it('does not resolve module paths when no compatible version is provided by core', function() {
-    const packagePath = fs.realpathSync(temp.mkdirSync('atom-package'));
+  return it('does not resolve module paths when no compatible version is provided by core', function () {
+    const packagePath = fs.realpathSync(temp.mkdirSync('atom-package'))
     ModuleCache.add(packagePath, {
       _atomModuleCache: {
         folders: [{
@@ -90,7 +96,7 @@ exports.load = function() { require('underscore-plus'); };\
           }
         }]
       }
-    });
+    })
     ModuleCache.add(atom.getLoadSettings().resourcePath, {
       _atomModuleCache: {
         dependencies: [{
@@ -99,18 +105,18 @@ exports.load = function() { require('underscore-plus'); };\
           path: path.join('node_modules', 'underscore-plus', 'lib', 'underscore-plus.js')
         }]
       }
-    });
+    })
 
-    const indexPath = path.join(packagePath, 'index.js');
+    const indexPath = path.join(packagePath, 'index.js')
     fs.writeFileSync(indexPath, `\
 exports.load = function() { require('underscore-plus'); };\
 `
-    );
+    )
 
-    spyOn(process, 'cwd').andReturn('/'); // Required when running this test from CLI
-    const packageMain = require(indexPath);
-    Module._findPath.reset();
-    expect(() => packageMain.load()).toThrow();
-    return expect(Module._findPath.callCount).toBe(1);
-  });
-});
+    spyOn(process, 'cwd').andReturn('/') // Required when running this test from CLI
+    const packageMain = require(indexPath)
+    Module._findPath.reset()
+    expect(() => packageMain.load()).toThrow()
+    return expect(Module._findPath.callCount).toBe(1)
+  })
+})
