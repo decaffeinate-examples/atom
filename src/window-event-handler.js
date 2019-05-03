@@ -1,189 +1,262 @@
-{Disposable, CompositeDisposable} = require 'event-kit'
-listen = require './delegated-listener'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let WindowEventHandler;
+const {Disposable, CompositeDisposable} = require('event-kit');
+const listen = require('./delegated-listener');
 
-# Handles low-level events related to the @window.
+// Handles low-level events related to the @window.
 module.exports =
-class WindowEventHandler
-  constructor: ({@atomEnvironment, @applicationDelegate}) ->
-    @reloadRequested = false
-    @subscriptions = new CompositeDisposable
+(WindowEventHandler = class WindowEventHandler {
+  constructor({atomEnvironment, applicationDelegate}) {
+    this.handleDocumentKeyEvent = this.handleDocumentKeyEvent.bind(this);
+    this.handleFocusNext = this.handleFocusNext.bind(this);
+    this.handleFocusPrevious = this.handleFocusPrevious.bind(this);
+    this.handleWindowBlur = this.handleWindowBlur.bind(this);
+    this.handleEnterFullScreen = this.handleEnterFullScreen.bind(this);
+    this.handleLeaveFullScreen = this.handleLeaveFullScreen.bind(this);
+    this.handleWindowBeforeunload = this.handleWindowBeforeunload.bind(this);
+    this.handleWindowToggleFullScreen = this.handleWindowToggleFullScreen.bind(this);
+    this.handleWindowClose = this.handleWindowClose.bind(this);
+    this.handleWindowReload = this.handleWindowReload.bind(this);
+    this.handleWindowToggleDevTools = this.handleWindowToggleDevTools.bind(this);
+    this.handleWindowToggleMenuBar = this.handleWindowToggleMenuBar.bind(this);
+    this.handleLinkClick = this.handleLinkClick.bind(this);
+    this.handleDocumentContextmenu = this.handleDocumentContextmenu.bind(this);
+    this.atomEnvironment = atomEnvironment;
+    this.applicationDelegate = applicationDelegate;
+    this.reloadRequested = false;
+    this.subscriptions = new CompositeDisposable;
 
-    @handleNativeKeybindings()
+    this.handleNativeKeybindings();
+  }
 
-  initialize: (@window, @document) ->
-    @subscriptions.add @atomEnvironment.commands.add @window,
-      'window:toggle-full-screen': @handleWindowToggleFullScreen
-      'window:close': @handleWindowClose
-      'window:reload': @handleWindowReload
-      'window:toggle-dev-tools': @handleWindowToggleDevTools
+  initialize(window, document) {
+    this.window = window;
+    this.document = document;
+    this.subscriptions.add(this.atomEnvironment.commands.add(this.window, {
+      'window:toggle-full-screen': this.handleWindowToggleFullScreen,
+      'window:close': this.handleWindowClose,
+      'window:reload': this.handleWindowReload,
+      'window:toggle-dev-tools': this.handleWindowToggleDevTools
+    }
+    )
+    );
 
-    if process.platform in ['win32', 'linux']
-      @subscriptions.add @atomEnvironment.commands.add @window,
-        'window:toggle-menu-bar': @handleWindowToggleMenuBar
+    if (['win32', 'linux'].includes(process.platform)) {
+      this.subscriptions.add(this.atomEnvironment.commands.add(this.window,
+        {'window:toggle-menu-bar': this.handleWindowToggleMenuBar})
+      );
+    }
 
-    @subscriptions.add @atomEnvironment.commands.add @document,
-      'core:focus-next': @handleFocusNext
-      'core:focus-previous': @handleFocusPrevious
+    this.subscriptions.add(this.atomEnvironment.commands.add(this.document, {
+      'core:focus-next': this.handleFocusNext,
+      'core:focus-previous': this.handleFocusPrevious
+    }
+    )
+    );
 
-    @addEventListener(@window, 'beforeunload', @handleWindowBeforeunload)
-    @addEventListener(@window, 'focus', @handleWindowFocus)
-    @addEventListener(@window, 'blur', @handleWindowBlur)
+    this.addEventListener(this.window, 'beforeunload', this.handleWindowBeforeunload);
+    this.addEventListener(this.window, 'focus', this.handleWindowFocus);
+    this.addEventListener(this.window, 'blur', this.handleWindowBlur);
 
-    @addEventListener(@document, 'keyup', @handleDocumentKeyEvent)
-    @addEventListener(@document, 'keydown', @handleDocumentKeyEvent)
-    @addEventListener(@document, 'drop', @handleDocumentDrop)
-    @addEventListener(@document, 'dragover', @handleDocumentDragover)
-    @addEventListener(@document, 'contextmenu', @handleDocumentContextmenu)
-    @subscriptions.add listen(@document, 'click', 'a', @handleLinkClick)
-    @subscriptions.add listen(@document, 'submit', 'form', @handleFormSubmit)
+    this.addEventListener(this.document, 'keyup', this.handleDocumentKeyEvent);
+    this.addEventListener(this.document, 'keydown', this.handleDocumentKeyEvent);
+    this.addEventListener(this.document, 'drop', this.handleDocumentDrop);
+    this.addEventListener(this.document, 'dragover', this.handleDocumentDragover);
+    this.addEventListener(this.document, 'contextmenu', this.handleDocumentContextmenu);
+    this.subscriptions.add(listen(this.document, 'click', 'a', this.handleLinkClick));
+    this.subscriptions.add(listen(this.document, 'submit', 'form', this.handleFormSubmit));
 
-    @subscriptions.add(@applicationDelegate.onDidEnterFullScreen(@handleEnterFullScreen))
-    @subscriptions.add(@applicationDelegate.onDidLeaveFullScreen(@handleLeaveFullScreen))
+    this.subscriptions.add(this.applicationDelegate.onDidEnterFullScreen(this.handleEnterFullScreen));
+    return this.subscriptions.add(this.applicationDelegate.onDidLeaveFullScreen(this.handleLeaveFullScreen));
+  }
 
-  # Wire commands that should be handled by Chromium for elements with the
-  # `.native-key-bindings` class.
-  handleNativeKeybindings: ->
-    bindCommandToAction = (command, action) =>
-      @subscriptions.add @atomEnvironment.commands.add(
+  // Wire commands that should be handled by Chromium for elements with the
+  // `.native-key-bindings` class.
+  handleNativeKeybindings() {
+    const bindCommandToAction = (command, action) => {
+      return this.subscriptions.add(this.atomEnvironment.commands.add(
         '.native-key-bindings',
         command,
-        ((event) => @applicationDelegate.getCurrentWindow().webContents[action]()),
+        (event => this.applicationDelegate.getCurrentWindow().webContents[action]()),
         false
       )
+      );
+    };
 
-    bindCommandToAction('core:copy', 'copy')
-    bindCommandToAction('core:paste', 'paste')
-    bindCommandToAction('core:undo', 'undo')
-    bindCommandToAction('core:redo', 'redo')
-    bindCommandToAction('core:select-all', 'selectAll')
-    bindCommandToAction('core:cut', 'cut')
+    bindCommandToAction('core:copy', 'copy');
+    bindCommandToAction('core:paste', 'paste');
+    bindCommandToAction('core:undo', 'undo');
+    bindCommandToAction('core:redo', 'redo');
+    bindCommandToAction('core:select-all', 'selectAll');
+    return bindCommandToAction('core:cut', 'cut');
+  }
 
-  unsubscribe: ->
-    @subscriptions.dispose()
+  unsubscribe() {
+    return this.subscriptions.dispose();
+  }
 
-  on: (target, eventName, handler) ->
-    target.on(eventName, handler)
-    @subscriptions.add(new Disposable ->
-      target.removeListener(eventName, handler)
-    )
+  on(target, eventName, handler) {
+    target.on(eventName, handler);
+    return this.subscriptions.add(new Disposable(function() {
+      return target.removeListener(eventName, handler);
+    }));
+  }
 
-  addEventListener: (target, eventName, handler) ->
-    target.addEventListener(eventName, handler)
-    @subscriptions.add(new Disposable(-> target.removeEventListener(eventName, handler)))
+  addEventListener(target, eventName, handler) {
+    target.addEventListener(eventName, handler);
+    return this.subscriptions.add(new Disposable(function() { return target.removeEventListener(eventName, handler); }));
+  }
 
-  handleDocumentKeyEvent: (event) =>
-    @atomEnvironment.keymaps.handleKeyboardEvent(event)
-    event.stopImmediatePropagation()
+  handleDocumentKeyEvent(event) {
+    this.atomEnvironment.keymaps.handleKeyboardEvent(event);
+    return event.stopImmediatePropagation();
+  }
 
-  handleDrop: (event) ->
-    event.preventDefault()
-    event.stopPropagation()
+  handleDrop(event) {
+    event.preventDefault();
+    return event.stopPropagation();
+  }
 
-  handleDragover: (event) ->
-    event.preventDefault()
-    event.stopPropagation()
-    event.dataTransfer.dropEffect = 'none'
+  handleDragover(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    return event.dataTransfer.dropEffect = 'none';
+  }
 
-  eachTabIndexedElement: (callback) ->
-    for element in @document.querySelectorAll('[tabindex]')
-      continue if element.disabled
-      continue unless element.tabIndex >= 0
-      callback(element, element.tabIndex)
-    return
+  eachTabIndexedElement(callback) {
+    for (let element of Array.from(this.document.querySelectorAll('[tabindex]'))) {
+      if (element.disabled) { continue; }
+      if (!(element.tabIndex >= 0)) { continue; }
+      callback(element, element.tabIndex);
+    }
+  }
 
-  handleFocusNext: =>
-    focusedTabIndex = @document.activeElement.tabIndex ? -Infinity
+  handleFocusNext() {
+    const focusedTabIndex = this.document.activeElement.tabIndex != null ? this.document.activeElement.tabIndex : -Infinity;
 
-    nextElement = null
-    nextTabIndex = Infinity
-    lowestElement = null
-    lowestTabIndex = Infinity
-    @eachTabIndexedElement (element, tabIndex) ->
-      if tabIndex < lowestTabIndex
-        lowestTabIndex = tabIndex
-        lowestElement = element
+    let nextElement = null;
+    let nextTabIndex = Infinity;
+    let lowestElement = null;
+    let lowestTabIndex = Infinity;
+    this.eachTabIndexedElement(function(element, tabIndex) {
+      if (tabIndex < lowestTabIndex) {
+        lowestTabIndex = tabIndex;
+        lowestElement = element;
+      }
 
-      if focusedTabIndex < tabIndex < nextTabIndex
-        nextTabIndex = tabIndex
-        nextElement = element
+      if (focusedTabIndex < tabIndex && tabIndex < nextTabIndex) {
+        nextTabIndex = tabIndex;
+        return nextElement = element;
+      }
+    });
 
-    if nextElement?
-      nextElement.focus()
-    else if lowestElement?
-      lowestElement.focus()
+    if (nextElement != null) {
+      return nextElement.focus();
+    } else if (lowestElement != null) {
+      return lowestElement.focus();
+    }
+  }
 
-  handleFocusPrevious: =>
-    focusedTabIndex = @document.activeElement.tabIndex ? Infinity
+  handleFocusPrevious() {
+    const focusedTabIndex = this.document.activeElement.tabIndex != null ? this.document.activeElement.tabIndex : Infinity;
 
-    previousElement = null
-    previousTabIndex = -Infinity
-    highestElement = null
-    highestTabIndex = -Infinity
-    @eachTabIndexedElement (element, tabIndex) ->
-      if tabIndex > highestTabIndex
-        highestTabIndex = tabIndex
-        highestElement = element
+    let previousElement = null;
+    let previousTabIndex = -Infinity;
+    let highestElement = null;
+    let highestTabIndex = -Infinity;
+    this.eachTabIndexedElement(function(element, tabIndex) {
+      if (tabIndex > highestTabIndex) {
+        highestTabIndex = tabIndex;
+        highestElement = element;
+      }
 
-      if focusedTabIndex > tabIndex > previousTabIndex
-        previousTabIndex = tabIndex
-        previousElement = element
+      if (focusedTabIndex > tabIndex && tabIndex > previousTabIndex) {
+        previousTabIndex = tabIndex;
+        return previousElement = element;
+      }
+    });
 
-    if previousElement?
-      previousElement.focus()
-    else if highestElement?
-      highestElement.focus()
+    if (previousElement != null) {
+      return previousElement.focus();
+    } else if (highestElement != null) {
+      return highestElement.focus();
+    }
+  }
 
-  handleWindowFocus: ->
-    @document.body.classList.remove('is-blurred')
+  handleWindowFocus() {
+    return this.document.body.classList.remove('is-blurred');
+  }
 
-  handleWindowBlur: =>
-    @document.body.classList.add('is-blurred')
-    @atomEnvironment.storeWindowDimensions()
+  handleWindowBlur() {
+    this.document.body.classList.add('is-blurred');
+    return this.atomEnvironment.storeWindowDimensions();
+  }
 
-  handleEnterFullScreen: =>
-    @document.body.classList.add("fullscreen")
+  handleEnterFullScreen() {
+    return this.document.body.classList.add("fullscreen");
+  }
 
-  handleLeaveFullScreen: =>
-    @document.body.classList.remove("fullscreen")
+  handleLeaveFullScreen() {
+    return this.document.body.classList.remove("fullscreen");
+  }
 
-  handleWindowBeforeunload: (event) =>
-    if not @reloadRequested and not @atomEnvironment.inSpecMode() and @atomEnvironment.getCurrentWindow().isWebViewFocused()
-      @atomEnvironment.hide()
-    @reloadRequested = false
-    @atomEnvironment.storeWindowDimensions()
-    @atomEnvironment.unloadEditorWindow()
-    @atomEnvironment.destroy()
+  handleWindowBeforeunload(event) {
+    if (!this.reloadRequested && !this.atomEnvironment.inSpecMode() && this.atomEnvironment.getCurrentWindow().isWebViewFocused()) {
+      this.atomEnvironment.hide();
+    }
+    this.reloadRequested = false;
+    this.atomEnvironment.storeWindowDimensions();
+    this.atomEnvironment.unloadEditorWindow();
+    return this.atomEnvironment.destroy();
+  }
 
-  handleWindowToggleFullScreen: =>
-    @atomEnvironment.toggleFullScreen()
+  handleWindowToggleFullScreen() {
+    return this.atomEnvironment.toggleFullScreen();
+  }
 
-  handleWindowClose: =>
-    @atomEnvironment.close()
+  handleWindowClose() {
+    return this.atomEnvironment.close();
+  }
 
-  handleWindowReload: =>
-    @reloadRequested = true
-    @atomEnvironment.reload()
+  handleWindowReload() {
+    this.reloadRequested = true;
+    return this.atomEnvironment.reload();
+  }
 
-  handleWindowToggleDevTools: =>
-    @atomEnvironment.toggleDevTools()
+  handleWindowToggleDevTools() {
+    return this.atomEnvironment.toggleDevTools();
+  }
 
-  handleWindowToggleMenuBar: =>
-    @atomEnvironment.config.set('core.autoHideMenuBar', not @atomEnvironment.config.get('core.autoHideMenuBar'))
+  handleWindowToggleMenuBar() {
+    this.atomEnvironment.config.set('core.autoHideMenuBar', !this.atomEnvironment.config.get('core.autoHideMenuBar'));
 
-    if @atomEnvironment.config.get('core.autoHideMenuBar')
-      detail = "To toggle, press the Alt key or execute the window:toggle-menu-bar command"
-      @atomEnvironment.notifications.addInfo('Menu bar hidden', {detail})
+    if (this.atomEnvironment.config.get('core.autoHideMenuBar')) {
+      const detail = "To toggle, press the Alt key or execute the window:toggle-menu-bar command";
+      return this.atomEnvironment.notifications.addInfo('Menu bar hidden', {detail});
+    }
+  }
 
-  handleLinkClick: (event) =>
-    event.preventDefault()
-    uri = event.currentTarget?.getAttribute('href')
-    if uri and uri[0] isnt '#' and /^https?:\/\//.test(uri)
-      @applicationDelegate.openExternal(uri)
+  handleLinkClick(event) {
+    event.preventDefault();
+    const uri = event.currentTarget != null ? event.currentTarget.getAttribute('href') : undefined;
+    if (uri && (uri[0] !== '#') && /^https?:\/\//.test(uri)) {
+      return this.applicationDelegate.openExternal(uri);
+    }
+  }
 
-  handleFormSubmit: (event) ->
-    # Prevent form submits from changing the current window's URL
-    event.preventDefault()
+  handleFormSubmit(event) {
+    // Prevent form submits from changing the current window's URL
+    return event.preventDefault();
+  }
 
-  handleDocumentContextmenu: (event) =>
-    event.preventDefault()
-    @atomEnvironment.contextMenu.showForEvent(event)
+  handleDocumentContextmenu(event) {
+    event.preventDefault();
+    return this.atomEnvironment.contextMenu.showForEvent(event);
+  }
+});

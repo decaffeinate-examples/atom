@@ -1,109 +1,124 @@
-Task = require '../src/task'
-Grim = require 'grim'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Task = require('../src/task');
+const Grim = require('grim');
 
-describe "Task", ->
-  describe "@once(taskPath, args..., callback)", ->
-    it "terminates the process after it completes", ->
-      handlerResult = null
-      task = Task.once require.resolve('./fixtures/task-spec-handler'), (result) ->
-        handlerResult = result
+describe("Task", function() {
+  describe("@once(taskPath, args..., callback)", () =>
+    it("terminates the process after it completes", function() {
+      let handlerResult = null;
+      const task = Task.once(require.resolve('./fixtures/task-spec-handler'), result => handlerResult = result);
 
-      processErrored = false
-      childProcess = task.childProcess
-      spyOn(childProcess, 'kill').andCallThrough()
-      task.childProcess.on 'error', -> processErrored = true
+      let processErrored = false;
+      const { childProcess } = task;
+      spyOn(childProcess, 'kill').andCallThrough();
+      task.childProcess.on('error', () => processErrored = true);
 
-      waitsFor ->
-        handlerResult?
+      waitsFor(() => handlerResult != null);
 
-      runs ->
-        expect(handlerResult).toBe 'hello'
-        expect(childProcess.kill).toHaveBeenCalled()
-        expect(processErrored).toBe false
+      return runs(function() {
+        expect(handlerResult).toBe('hello');
+        expect(childProcess.kill).toHaveBeenCalled();
+        return expect(processErrored).toBe(false);
+      });
+    })
+  );
 
-  it "calls listeners registered with ::on when events are emitted in the task", ->
-    task = new Task(require.resolve('./fixtures/task-spec-handler'))
+  it("calls listeners registered with ::on when events are emitted in the task", function() {
+    const task = new Task(require.resolve('./fixtures/task-spec-handler'));
 
-    eventSpy = jasmine.createSpy('eventSpy')
-    task.on("some-event", eventSpy)
+    const eventSpy = jasmine.createSpy('eventSpy');
+    task.on("some-event", eventSpy);
 
-    waitsFor (done) -> task.start(done)
+    waitsFor(done => task.start(done));
 
-    runs ->
-      expect(eventSpy).toHaveBeenCalledWith(1, 2, 3)
+    return runs(() => expect(eventSpy).toHaveBeenCalledWith(1, 2, 3));
+  });
 
-  it "unregisters listeners when the Disposable returned by ::on is disposed", ->
-    task = new Task(require.resolve('./fixtures/task-spec-handler'))
+  it("unregisters listeners when the Disposable returned by ::on is disposed", function() {
+    const task = new Task(require.resolve('./fixtures/task-spec-handler'));
 
-    eventSpy = jasmine.createSpy('eventSpy')
-    disposable = task.on("some-event", eventSpy)
-    disposable.dispose()
+    const eventSpy = jasmine.createSpy('eventSpy');
+    const disposable = task.on("some-event", eventSpy);
+    disposable.dispose();
 
-    waitsFor (done) -> task.start(done)
+    waitsFor(done => task.start(done));
 
-    runs ->
-      expect(eventSpy).not.toHaveBeenCalled()
+    return runs(() => expect(eventSpy).not.toHaveBeenCalled());
+  });
 
-  it "reports deprecations in tasks", ->
-    jasmine.snapshotDeprecations()
-    handlerPath = require.resolve('./fixtures/task-handler-with-deprecations')
-    task = new Task(handlerPath)
+  it("reports deprecations in tasks", function() {
+    jasmine.snapshotDeprecations();
+    const handlerPath = require.resolve('./fixtures/task-handler-with-deprecations');
+    const task = new Task(handlerPath);
 
-    waitsFor (done) -> task.start(done)
+    waitsFor(done => task.start(done));
 
-    runs ->
-      deprecations = Grim.getDeprecations()
-      expect(deprecations.length).toBe 1
-      expect(deprecations[0].getStacks()[0][1].fileName).toBe handlerPath
-      jasmine.restoreDeprecationsSnapshot()
+    return runs(function() {
+      const deprecations = Grim.getDeprecations();
+      expect(deprecations.length).toBe(1);
+      expect(deprecations[0].getStacks()[0][1].fileName).toBe(handlerPath);
+      return jasmine.restoreDeprecationsSnapshot();
+    });
+  });
 
-  it "adds data listeners to standard out and error to report output", ->
-    task = new Task(require.resolve('./fixtures/task-spec-handler'))
-    {stdout, stderr} = task.childProcess
+  it("adds data listeners to standard out and error to report output", function() {
+    const task = new Task(require.resolve('./fixtures/task-spec-handler'));
+    const {stdout, stderr} = task.childProcess;
 
-    task.start()
-    task.start()
-    expect(stdout.listeners('data').length).toBe 1
-    expect(stderr.listeners('data').length).toBe 1
+    task.start();
+    task.start();
+    expect(stdout.listeners('data').length).toBe(1);
+    expect(stderr.listeners('data').length).toBe(1);
 
-    task.terminate()
-    expect(stdout.listeners('data').length).toBe 0
-    expect(stderr.listeners('data').length).toBe 0
+    task.terminate();
+    expect(stdout.listeners('data').length).toBe(0);
+    return expect(stderr.listeners('data').length).toBe(0);
+  });
 
-  it "does not throw an error for forked processes missing stdout/stderr", ->
-    spyOn(require('child_process'), 'fork').andCallFake ->
-      Events = require 'events'
-      fakeProcess = new Events()
-      fakeProcess.send = ->
-      fakeProcess.kill = ->
-      fakeProcess
+  it("does not throw an error for forked processes missing stdout/stderr", function() {
+    spyOn(require('child_process'), 'fork').andCallFake(function() {
+      const Events = require('events');
+      const fakeProcess = new Events();
+      fakeProcess.send = function() {};
+      fakeProcess.kill = function() {};
+      return fakeProcess;
+    });
 
-    task = new Task(require.resolve('./fixtures/task-spec-handler'))
-    expect(-> task.start()).not.toThrow()
-    expect(-> task.terminate()).not.toThrow()
+    const task = new Task(require.resolve('./fixtures/task-spec-handler'));
+    expect(() => task.start()).not.toThrow();
+    return expect(() => task.terminate()).not.toThrow();
+  });
 
-  describe "::cancel()", ->
-    it "dispatches 'task:cancelled' when invoked on an active task", ->
-      task = new Task(require.resolve('./fixtures/task-spec-handler'))
-      cancelledEventSpy = jasmine.createSpy('eventSpy')
-      task.on('task:cancelled', cancelledEventSpy)
-      completedEventSpy = jasmine.createSpy('eventSpy')
-      task.on('task:completed', completedEventSpy)
+  return describe("::cancel()", function() {
+    it("dispatches 'task:cancelled' when invoked on an active task", function() {
+      const task = new Task(require.resolve('./fixtures/task-spec-handler'));
+      const cancelledEventSpy = jasmine.createSpy('eventSpy');
+      task.on('task:cancelled', cancelledEventSpy);
+      const completedEventSpy = jasmine.createSpy('eventSpy');
+      task.on('task:completed', completedEventSpy);
 
-      expect(task.cancel()).toBe(true)
-      expect(cancelledEventSpy).toHaveBeenCalled()
-      expect(completedEventSpy).not.toHaveBeenCalled()
+      expect(task.cancel()).toBe(true);
+      expect(cancelledEventSpy).toHaveBeenCalled();
+      return expect(completedEventSpy).not.toHaveBeenCalled();
+    });
 
-    it "does not dispatch 'task:cancelled' when invoked on an inactive task", ->
-      handlerResult = null
-      task = Task.once require.resolve('./fixtures/task-spec-handler'), (result) ->
-        handlerResult = result
+    return it("does not dispatch 'task:cancelled' when invoked on an inactive task", function() {
+      let handlerResult = null;
+      const task = Task.once(require.resolve('./fixtures/task-spec-handler'), result => handlerResult = result);
 
-      waitsFor ->
-        handlerResult?
+      waitsFor(() => handlerResult != null);
 
-      runs ->
-        cancelledEventSpy = jasmine.createSpy('eventSpy')
-        task.on('task:cancelled', cancelledEventSpy)
-        expect(task.cancel()).toBe(false)
-        expect(cancelledEventSpy).not.toHaveBeenCalled()
+      return runs(function() {
+        const cancelledEventSpy = jasmine.createSpy('eventSpy');
+        task.on('task:cancelled', cancelledEventSpy);
+        expect(task.cancel()).toBe(false);
+        return expect(cancelledEventSpy).not.toHaveBeenCalled();
+      });
+    });
+  });
+});

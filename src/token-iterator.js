@@ -1,56 +1,74 @@
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let TokenIterator;
 module.exports =
-class TokenIterator
-  constructor: (@tokenizedBuffer) ->
+(TokenIterator = class TokenIterator {
+  constructor(tokenizedBuffer) {
+    this.tokenizedBuffer = tokenizedBuffer;
+  }
 
-  reset: (@line) ->
-    @index = null
-    @startColumn = 0
-    @endColumn = 0
-    @scopes = @line.openScopes.map (id) => @tokenizedBuffer.grammar.scopeForId(id)
-    @scopeStarts = @scopes.slice()
-    @scopeEnds = []
-    this
+  reset(line) {
+    this.line = line;
+    this.index = null;
+    this.startColumn = 0;
+    this.endColumn = 0;
+    this.scopes = this.line.openScopes.map(id => this.tokenizedBuffer.grammar.scopeForId(id));
+    this.scopeStarts = this.scopes.slice();
+    this.scopeEnds = [];
+    return this;
+  }
 
-  next: ->
-    {tags} = @line
+  next() {
+    const {tags} = this.line;
 
-    if @index?
-      @startColumn = @endColumn
-      @scopeEnds.length = 0
-      @scopeStarts.length = 0
-      @index++
-    else
-      @index = 0
+    if (this.index != null) {
+      this.startColumn = this.endColumn;
+      this.scopeEnds.length = 0;
+      this.scopeStarts.length = 0;
+      this.index++;
+    } else {
+      this.index = 0;
+    }
 
-    while @index < tags.length
-      tag = tags[@index]
-      if tag < 0
-        scope = @tokenizedBuffer.grammar.scopeForId(tag)
-        if tag % 2 is 0
-          if @scopeStarts[@scopeStarts.length - 1] is scope
-            @scopeStarts.pop()
-          else
-            @scopeEnds.push(scope)
-          @scopes.pop()
-        else
-          @scopeStarts.push(scope)
-          @scopes.push(scope)
-        @index++
-      else
-        @endColumn += tag
-        @text = @line.text.substring(@startColumn, @endColumn)
-        return true
+    while (this.index < tags.length) {
+      const tag = tags[this.index];
+      if (tag < 0) {
+        const scope = this.tokenizedBuffer.grammar.scopeForId(tag);
+        if ((tag % 2) === 0) {
+          if (this.scopeStarts[this.scopeStarts.length - 1] === scope) {
+            this.scopeStarts.pop();
+          } else {
+            this.scopeEnds.push(scope);
+          }
+          this.scopes.pop();
+        } else {
+          this.scopeStarts.push(scope);
+          this.scopes.push(scope);
+        }
+        this.index++;
+      } else {
+        this.endColumn += tag;
+        this.text = this.line.text.substring(this.startColumn, this.endColumn);
+        return true;
+      }
+    }
 
-    false
+    return false;
+  }
 
-  getScopes: -> @scopes
+  getScopes() { return this.scopes; }
 
-  getScopeStarts: -> @scopeStarts
+  getScopeStarts() { return this.scopeStarts; }
 
-  getScopeEnds: -> @scopeEnds
+  getScopeEnds() { return this.scopeEnds; }
 
-  getText: -> @text
+  getText() { return this.text; }
 
-  getBufferStart: -> @startColumn
+  getBufferStart() { return this.startColumn; }
 
-  getBufferEnd: -> @endColumn
+  getBufferEnd() { return this.endColumn; }
+});

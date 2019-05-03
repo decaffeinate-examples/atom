@@ -1,131 +1,177 @@
-path = require 'path'
-{CompositeDisposable} = require 'event-kit'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require('path');
+const {CompositeDisposable} = require('event-kit');
 
-class PaneElement extends HTMLElement
-  attached: false
+class PaneElement extends HTMLElement {
+  static initClass() {
+    this.prototype.attached = false;
+  }
 
-  createdCallback: ->
-    @attached = false
-    @subscriptions = new CompositeDisposable
-    @inlineDisplayStyles = new WeakMap
+  createdCallback() {
+    this.attached = false;
+    this.subscriptions = new CompositeDisposable;
+    this.inlineDisplayStyles = new WeakMap;
 
-    @initializeContent()
-    @subscribeToDOMEvents()
+    this.initializeContent();
+    return this.subscribeToDOMEvents();
+  }
 
-  attachedCallback: ->
-    @attached = true
-    @focus() if @model.isFocused()
+  attachedCallback() {
+    this.attached = true;
+    if (this.model.isFocused()) { return this.focus(); }
+  }
 
-  detachedCallback: ->
-    @attached = false
+  detachedCallback() {
+    return this.attached = false;
+  }
 
-  initializeContent: ->
-    @setAttribute 'class', 'pane'
-    @setAttribute 'tabindex', -1
-    @appendChild @itemViews = document.createElement('div')
-    @itemViews.setAttribute 'class', 'item-views'
+  initializeContent() {
+    this.setAttribute('class', 'pane');
+    this.setAttribute('tabindex', -1);
+    this.appendChild(this.itemViews = document.createElement('div'));
+    return this.itemViews.setAttribute('class', 'item-views');
+  }
 
-  subscribeToDOMEvents: ->
-    handleFocus = (event) =>
-      @model.focus() unless @isActivating or @model.isDestroyed() or @contains(event.relatedTarget)
-      if event.target is this and view = @getActiveView()
-        view.focus()
-        event.stopPropagation()
+  subscribeToDOMEvents() {
+    const handleFocus = event => {
+      let view;
+      if (!this.isActivating && !this.model.isDestroyed() && !this.contains(event.relatedTarget)) { this.model.focus(); }
+      if ((event.target === this) && (view = this.getActiveView())) {
+        view.focus();
+        return event.stopPropagation();
+      }
+    };
 
-    handleBlur = (event) =>
-      @model.blur() unless @contains(event.relatedTarget)
+    const handleBlur = event => {
+      if (!this.contains(event.relatedTarget)) { return this.model.blur(); }
+    };
 
-    handleDragOver = (event) ->
-      event.preventDefault()
-      event.stopPropagation()
+    const handleDragOver = function(event) {
+      event.preventDefault();
+      return event.stopPropagation();
+    };
 
-    handleDrop = (event) =>
-      event.preventDefault()
-      event.stopPropagation()
-      @getModel().activate()
-      pathsToOpen = Array::map.call event.dataTransfer.files, (file) -> file.path
-      @applicationDelegate.open({pathsToOpen}) if pathsToOpen.length > 0
+    const handleDrop = event => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.getModel().activate();
+      const pathsToOpen = Array.prototype.map.call(event.dataTransfer.files, file => file.path);
+      if (pathsToOpen.length > 0) { return this.applicationDelegate.open({pathsToOpen}); }
+    };
 
-    @addEventListener 'focus', handleFocus, true
-    @addEventListener 'blur', handleBlur, true
-    @addEventListener 'dragover', handleDragOver
-    @addEventListener 'drop', handleDrop
+    this.addEventListener('focus', handleFocus, true);
+    this.addEventListener('blur', handleBlur, true);
+    this.addEventListener('dragover', handleDragOver);
+    return this.addEventListener('drop', handleDrop);
+  }
 
-  initialize: (@model, {@views, @applicationDelegate}) ->
-    throw new Error("Must pass a views parameter when initializing PaneElements") unless @views?
-    throw new Error("Must pass an applicationDelegate parameter when initializing PaneElements") unless @applicationDelegate?
+  initialize(model, {views, applicationDelegate}) {
+    this.model = model;
+    this.views = views;
+    this.applicationDelegate = applicationDelegate;
+    if (this.views == null) { throw new Error("Must pass a views parameter when initializing PaneElements"); }
+    if (this.applicationDelegate == null) { throw new Error("Must pass an applicationDelegate parameter when initializing PaneElements"); }
 
-    @subscriptions.add @model.onDidActivate(@activated.bind(this))
-    @subscriptions.add @model.observeActive(@activeStatusChanged.bind(this))
-    @subscriptions.add @model.observeActiveItem(@activeItemChanged.bind(this))
-    @subscriptions.add @model.onDidRemoveItem(@itemRemoved.bind(this))
-    @subscriptions.add @model.onDidDestroy(@paneDestroyed.bind(this))
-    @subscriptions.add @model.observeFlexScale(@flexScaleChanged.bind(this))
-    this
+    this.subscriptions.add(this.model.onDidActivate(this.activated.bind(this)));
+    this.subscriptions.add(this.model.observeActive(this.activeStatusChanged.bind(this)));
+    this.subscriptions.add(this.model.observeActiveItem(this.activeItemChanged.bind(this)));
+    this.subscriptions.add(this.model.onDidRemoveItem(this.itemRemoved.bind(this)));
+    this.subscriptions.add(this.model.onDidDestroy(this.paneDestroyed.bind(this)));
+    this.subscriptions.add(this.model.observeFlexScale(this.flexScaleChanged.bind(this)));
+    return this;
+  }
 
-  getModel: -> @model
+  getModel() { return this.model; }
 
-  activated: ->
-    @isActivating = true
-    @focus() unless @hasFocus() # Don't steal focus from children.
-    @isActivating = false
+  activated() {
+    this.isActivating = true;
+    if (!this.hasFocus()) { this.focus(); } // Don't steal focus from children.
+    return this.isActivating = false;
+  }
 
-  activeStatusChanged: (active) ->
-    if active
-      @classList.add('active')
-    else
-      @classList.remove('active')
+  activeStatusChanged(active) {
+    if (active) {
+      return this.classList.add('active');
+    } else {
+      return this.classList.remove('active');
+    }
+  }
 
-  activeItemChanged: (item) ->
-    delete @dataset.activeItemName
-    delete @dataset.activeItemPath
+  activeItemChanged(item) {
+    let itemPath;
+    delete this.dataset.activeItemName;
+    delete this.dataset.activeItemPath;
 
-    return unless item?
+    if (item == null) { return; }
 
-    hasFocus = @hasFocus()
-    itemView = @views.getView(item)
+    const hasFocus = this.hasFocus();
+    const itemView = this.views.getView(item);
 
-    if itemPath = item.getPath?()
-      @dataset.activeItemName = path.basename(itemPath)
-      @dataset.activeItemPath = itemPath
+    if (itemPath = typeof item.getPath === 'function' ? item.getPath() : undefined) {
+      this.dataset.activeItemName = path.basename(itemPath);
+      this.dataset.activeItemPath = itemPath;
+    }
 
-    unless @itemViews.contains(itemView)
-      @itemViews.appendChild(itemView)
+    if (!this.itemViews.contains(itemView)) {
+      this.itemViews.appendChild(itemView);
+    }
 
-    for child in @itemViews.children
-      if child is itemView
-        @showItemView(child) if @attached
-      else
-        @hideItemView(child)
+    for (let child of Array.from(this.itemViews.children)) {
+      if (child === itemView) {
+        if (this.attached) { this.showItemView(child); }
+      } else {
+        this.hideItemView(child);
+      }
+    }
 
-    itemView.focus() if hasFocus
+    if (hasFocus) { return itemView.focus(); }
+  }
 
-  showItemView: (itemView) ->
-    inlineDisplayStyle = @inlineDisplayStyles.get(itemView)
-    if inlineDisplayStyle?
-      itemView.style.display = inlineDisplayStyle
-    else
-      itemView.style.display = ''
+  showItemView(itemView) {
+    const inlineDisplayStyle = this.inlineDisplayStyles.get(itemView);
+    if (inlineDisplayStyle != null) {
+      return itemView.style.display = inlineDisplayStyle;
+    } else {
+      return itemView.style.display = '';
+    }
+  }
 
-  hideItemView: (itemView) ->
-    inlineDisplayStyle = itemView.style.display
-    unless inlineDisplayStyle is 'none'
-      @inlineDisplayStyles.set(itemView, inlineDisplayStyle) if inlineDisplayStyle?
-      itemView.style.display = 'none'
+  hideItemView(itemView) {
+    const inlineDisplayStyle = itemView.style.display;
+    if (inlineDisplayStyle !== 'none') {
+      if (inlineDisplayStyle != null) { this.inlineDisplayStyles.set(itemView, inlineDisplayStyle); }
+      return itemView.style.display = 'none';
+    }
+  }
 
-  itemRemoved: ({item, index, destroyed}) ->
-    if viewToRemove = @views.getView(item)
-      viewToRemove.remove()
+  itemRemoved({item, index, destroyed}) {
+    let viewToRemove;
+    if (viewToRemove = this.views.getView(item)) {
+      return viewToRemove.remove();
+    }
+  }
 
-  paneDestroyed: ->
-    @subscriptions.dispose()
+  paneDestroyed() {
+    return this.subscriptions.dispose();
+  }
 
-  flexScaleChanged: (flexScale) ->
-    @style.flexGrow = flexScale
+  flexScaleChanged(flexScale) {
+    return this.style.flexGrow = flexScale;
+  }
 
-  getActiveView: -> @views.getView(@model.getActiveItem())
+  getActiveView() { return this.views.getView(this.model.getActiveItem()); }
 
-  hasFocus: ->
-    this is document.activeElement or @contains(document.activeElement)
+  hasFocus() {
+    return (this === document.activeElement) || this.contains(document.activeElement);
+  }
+}
+PaneElement.initClass();
 
-module.exports = PaneElement = document.registerElement 'atom-pane', prototype: PaneElement.prototype
+module.exports = (PaneElement = document.registerElement('atom-pane', {prototype: PaneElement.prototype}));

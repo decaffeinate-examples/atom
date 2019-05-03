@@ -1,86 +1,110 @@
-{Emitter} = require 'event-kit'
-_ = require 'underscore-plus'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Notification;
+const {Emitter} = require('event-kit');
+const _ = require('underscore-plus');
 
-# Public: A notification to the user containing a message and type.
+// Public: A notification to the user containing a message and type.
 module.exports =
-class Notification
-  constructor: (@type, @message, @options={}) ->
-    @emitter = new Emitter
-    @timestamp = new Date()
-    @dismissed = true
-    @dismissed = false if @isDismissable()
-    @displayed = false
-    @validate()
+(Notification = class Notification {
+  constructor(type, message, options) {
+    this.type = type;
+    this.message = message;
+    if (options == null) { options = {}; }
+    this.options = options;
+    this.emitter = new Emitter;
+    this.timestamp = new Date();
+    this.dismissed = true;
+    if (this.isDismissable()) { this.dismissed = false; }
+    this.displayed = false;
+    this.validate();
+  }
 
-  validate: ->
-    if typeof @message isnt 'string'
-      throw new Error("Notification must be created with string message: #{@message}")
+  validate() {
+    if (typeof this.message !== 'string') {
+      throw new Error(`Notification must be created with string message: ${this.message}`);
+    }
 
-    unless _.isObject(@options) and not _.isArray(@options)
-      throw new Error("Notification must be created with an options object: #{@options}")
+    if (!_.isObject(this.options) || !!_.isArray(this.options)) {
+      throw new Error(`Notification must be created with an options object: ${this.options}`);
+    }
+  }
 
-  ###
+  /*
   Section: Event Subscription
-  ###
+  */
 
-  # Public: Invoke the given callback when the notification is dismissed.
-  #
-  # * `callback` {Function} to be called when the notification is dismissed.
-  #
-  # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  onDidDismiss: (callback) ->
-    @emitter.on 'did-dismiss', callback
+  // Public: Invoke the given callback when the notification is dismissed.
+  //
+  // * `callback` {Function} to be called when the notification is dismissed.
+  //
+  // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
+  onDidDismiss(callback) {
+    return this.emitter.on('did-dismiss', callback);
+  }
 
-  # Public: Invoke the given callback when the notification is displayed.
-  #
-  # * `callback` {Function} to be called when the notification is displayed.
-  #
-  # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  onDidDisplay: (callback) ->
-    @emitter.on 'did-display', callback
+  // Public: Invoke the given callback when the notification is displayed.
+  //
+  // * `callback` {Function} to be called when the notification is displayed.
+  //
+  // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
+  onDidDisplay(callback) {
+    return this.emitter.on('did-display', callback);
+  }
 
-  getOptions: -> @options
+  getOptions() { return this.options; }
 
-  ###
+  /*
   Section: Methods
-  ###
+  */
 
-  # Public: Returns the {String} type.
-  getType: -> @type
+  // Public: Returns the {String} type.
+  getType() { return this.type; }
 
-  # Public: Returns the {String} message.
-  getMessage: -> @message
+  // Public: Returns the {String} message.
+  getMessage() { return this.message; }
 
-  getTimestamp: -> @timestamp
+  getTimestamp() { return this.timestamp; }
 
-  getDetail: -> @options.detail
+  getDetail() { return this.options.detail; }
 
-  isEqual: (other) ->
-    @getMessage() is other.getMessage() \
-      and @getType() is other.getType() \
-      and @getDetail() is other.getDetail()
+  isEqual(other) {
+    return (this.getMessage() === other.getMessage()) 
+      && (this.getType() === other.getType()) 
+      && (this.getDetail() === other.getDetail());
+  }
 
-  # Extended: Dismisses the notification, removing it from the UI. Calling this programmatically
-  # will call all callbacks added via `onDidDismiss`.
-  dismiss: ->
-    return unless @isDismissable() and not @isDismissed()
-    @dismissed = true
-    @emitter.emit 'did-dismiss', this
+  // Extended: Dismisses the notification, removing it from the UI. Calling this programmatically
+  // will call all callbacks added via `onDidDismiss`.
+  dismiss() {
+    if (!this.isDismissable() || !!this.isDismissed()) { return; }
+    this.dismissed = true;
+    return this.emitter.emit('did-dismiss', this);
+  }
 
-  isDismissed: -> @dismissed
+  isDismissed() { return this.dismissed; }
 
-  isDismissable: -> !!@options.dismissable
+  isDismissable() { return !!this.options.dismissable; }
 
-  wasDisplayed: -> @displayed
+  wasDisplayed() { return this.displayed; }
 
-  setDisplayed: (@displayed) ->
-    @emitter.emit 'did-display', this
+  setDisplayed(displayed) {
+    this.displayed = displayed;
+    return this.emitter.emit('did-display', this);
+  }
 
-  getIcon: ->
-    return @options.icon if @options.icon?
-    switch @type
-      when 'fatal' then 'bug'
-      when 'error' then 'flame'
-      when 'warning' then 'alert'
-      when 'info' then 'info'
-      when 'success' then 'check'
+  getIcon() {
+    if (this.options.icon != null) { return this.options.icon; }
+    switch (this.type) {
+      case 'fatal': return 'bug';
+      case 'error': return 'flame';
+      case 'warning': return 'alert';
+      case 'info': return 'info';
+      case 'success': return 'check';
+    }
+  }
+});

@@ -1,294 +1,327 @@
-{ipcRenderer} = require 'electron'
-Grim = require 'grim'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {ipcRenderer} = require('electron');
+const Grim = require('grim');
 
-module.exports = ({commandRegistry, commandInstaller, config, notificationManager, project, clipboard}) ->
+module.exports = function({commandRegistry, commandInstaller, config, notificationManager, project, clipboard}) {
   commandRegistry.add(
     'atom-workspace',
     {
-      'pane:show-next-recently-used-item': -> @getModel().getActivePane().activateNextRecentlyUsedItem()
-      'pane:show-previous-recently-used-item': -> @getModel().getActivePane().activatePreviousRecentlyUsedItem()
-      'pane:move-active-item-to-top-of-stack': -> @getModel().getActivePane().moveActiveItemToTopOfStack()
-      'pane:show-next-item': -> @getModel().getActivePane().activateNextItem()
-      'pane:show-previous-item': -> @getModel().getActivePane().activatePreviousItem()
-      'pane:show-item-1': -> @getModel().getActivePane().activateItemAtIndex(0)
-      'pane:show-item-2': -> @getModel().getActivePane().activateItemAtIndex(1)
-      'pane:show-item-3': -> @getModel().getActivePane().activateItemAtIndex(2)
-      'pane:show-item-4': -> @getModel().getActivePane().activateItemAtIndex(3)
-      'pane:show-item-5': -> @getModel().getActivePane().activateItemAtIndex(4)
-      'pane:show-item-6': -> @getModel().getActivePane().activateItemAtIndex(5)
-      'pane:show-item-7': -> @getModel().getActivePane().activateItemAtIndex(6)
-      'pane:show-item-8': -> @getModel().getActivePane().activateItemAtIndex(7)
-      'pane:show-item-9': -> @getModel().getActivePane().activateLastItem()
-      'pane:move-item-right': -> @getModel().getActivePane().moveItemRight()
-      'pane:move-item-left': -> @getModel().getActivePane().moveItemLeft()
-      'window:increase-font-size': -> @getModel().increaseFontSize()
-      'window:decrease-font-size': -> @getModel().decreaseFontSize()
-      'window:reset-font-size': -> @getModel().resetFontSize()
-      'application:about': -> ipcRenderer.send('command', 'application:about')
-      'application:show-preferences': -> ipcRenderer.send('command', 'application:show-settings')
-      'application:show-settings': -> ipcRenderer.send('command', 'application:show-settings')
-      'application:quit': -> ipcRenderer.send('command', 'application:quit')
-      'application:hide': -> ipcRenderer.send('command', 'application:hide')
-      'application:hide-other-applications': -> ipcRenderer.send('command', 'application:hide-other-applications')
-      'application:install-update': -> ipcRenderer.send('command', 'application:install-update')
-      'application:unhide-all-applications': -> ipcRenderer.send('command', 'application:unhide-all-applications')
-      'application:new-window': -> ipcRenderer.send('command', 'application:new-window')
-      'application:new-file': -> ipcRenderer.send('command', 'application:new-file')
-      'application:open': ->
-        defaultPath = atom.workspace.getActiveTextEditor()?.getPath() ? atom.project.getPaths()?[0]
-        ipcRenderer.send('open-command', 'application:open', defaultPath)
-      'application:open-file': ->
-        defaultPath = atom.workspace.getActiveTextEditor()?.getPath() ? atom.project.getPaths()?[0]
-        ipcRenderer.send('open-command', 'application:open-file', defaultPath)
-      'application:open-folder': ->
-        defaultPath = atom.workspace.getActiveTextEditor()?.getPath() ? atom.project.getPaths()?[0]
-        ipcRenderer.send('open-command', 'application:open-folder', defaultPath)
-      'application:open-dev': -> ipcRenderer.send('command', 'application:open-dev')
-      'application:open-safe': -> ipcRenderer.send('command', 'application:open-safe')
-      'application:add-project-folder': -> atom.addProjectFolder()
-      'application:minimize': -> ipcRenderer.send('command', 'application:minimize')
-      'application:zoom': -> ipcRenderer.send('command', 'application:zoom')
-      'application:bring-all-windows-to-front': -> ipcRenderer.send('command', 'application:bring-all-windows-to-front')
-      'application:open-your-config': -> ipcRenderer.send('command', 'application:open-your-config')
-      'application:open-your-init-script': -> ipcRenderer.send('command', 'application:open-your-init-script')
-      'application:open-your-keymap': -> ipcRenderer.send('command', 'application:open-your-keymap')
-      'application:open-your-snippets': -> ipcRenderer.send('command', 'application:open-your-snippets')
-      'application:open-your-stylesheet': -> ipcRenderer.send('command', 'application:open-your-stylesheet')
-      'application:open-license': -> @getModel().openLicense()
-      'window:run-package-specs': -> @runPackageSpecs()
-      'window:run-benchmarks': -> @runBenchmarks()
-      'window:toggle-left-dock': -> @getModel().getLeftDock().toggle()
-      'window:toggle-right-dock': -> @getModel().getRightDock().toggle()
-      'window:toggle-bottom-dock': -> @getModel().getBottomDock().toggle()
-      'window:focus-next-pane': -> @getModel().activateNextPane()
-      'window:focus-previous-pane': -> @getModel().activatePreviousPane()
-      'window:focus-pane-above': -> @focusPaneViewAbove()
-      'window:focus-pane-below': -> @focusPaneViewBelow()
-      'window:focus-pane-on-left': -> @focusPaneViewOnLeft()
-      'window:focus-pane-on-right': -> @focusPaneViewOnRight()
-      'window:move-active-item-to-pane-above': -> @moveActiveItemToPaneAbove()
-      'window:move-active-item-to-pane-below': -> @moveActiveItemToPaneBelow()
-      'window:move-active-item-to-pane-on-left': -> @moveActiveItemToPaneOnLeft()
-      'window:move-active-item-to-pane-on-right': -> @moveActiveItemToPaneOnRight()
-      'window:copy-active-item-to-pane-above': -> @moveActiveItemToPaneAbove(keepOriginal: true)
-      'window:copy-active-item-to-pane-below': -> @moveActiveItemToPaneBelow(keepOriginal: true)
-      'window:copy-active-item-to-pane-on-left': -> @moveActiveItemToPaneOnLeft(keepOriginal: true)
-      'window:copy-active-item-to-pane-on-right': -> @moveActiveItemToPaneOnRight(keepOriginal: true)
-      'window:save-all': -> @getModel().saveAll()
-      'window:toggle-invisibles': -> config.set("editor.showInvisibles", not config.get("editor.showInvisibles"))
-      'window:log-deprecation-warnings': -> Grim.logDeprecations()
-      'window:toggle-auto-indent': -> config.set("editor.autoIndent", not config.get("editor.autoIndent"))
-      'pane:reopen-closed-item': -> @getModel().reopenItem()
-      'core:close': -> @getModel().closeActivePaneItemOrEmptyPaneOrWindow()
-      'core:save': -> @getModel().saveActivePaneItem()
-      'core:save-as': -> @getModel().saveActivePaneItemAs()
+      'pane:show-next-recently-used-item'() { return this.getModel().getActivePane().activateNextRecentlyUsedItem(); },
+      'pane:show-previous-recently-used-item'() { return this.getModel().getActivePane().activatePreviousRecentlyUsedItem(); },
+      'pane:move-active-item-to-top-of-stack'() { return this.getModel().getActivePane().moveActiveItemToTopOfStack(); },
+      'pane:show-next-item'() { return this.getModel().getActivePane().activateNextItem(); },
+      'pane:show-previous-item'() { return this.getModel().getActivePane().activatePreviousItem(); },
+      'pane:show-item-1'() { return this.getModel().getActivePane().activateItemAtIndex(0); },
+      'pane:show-item-2'() { return this.getModel().getActivePane().activateItemAtIndex(1); },
+      'pane:show-item-3'() { return this.getModel().getActivePane().activateItemAtIndex(2); },
+      'pane:show-item-4'() { return this.getModel().getActivePane().activateItemAtIndex(3); },
+      'pane:show-item-5'() { return this.getModel().getActivePane().activateItemAtIndex(4); },
+      'pane:show-item-6'() { return this.getModel().getActivePane().activateItemAtIndex(5); },
+      'pane:show-item-7'() { return this.getModel().getActivePane().activateItemAtIndex(6); },
+      'pane:show-item-8'() { return this.getModel().getActivePane().activateItemAtIndex(7); },
+      'pane:show-item-9'() { return this.getModel().getActivePane().activateLastItem(); },
+      'pane:move-item-right'() { return this.getModel().getActivePane().moveItemRight(); },
+      'pane:move-item-left'() { return this.getModel().getActivePane().moveItemLeft(); },
+      'window:increase-font-size'() { return this.getModel().increaseFontSize(); },
+      'window:decrease-font-size'() { return this.getModel().decreaseFontSize(); },
+      'window:reset-font-size'() { return this.getModel().resetFontSize(); },
+      'application:about'() { return ipcRenderer.send('command', 'application:about'); },
+      'application:show-preferences'() { return ipcRenderer.send('command', 'application:show-settings'); },
+      'application:show-settings'() { return ipcRenderer.send('command', 'application:show-settings'); },
+      'application:quit'() { return ipcRenderer.send('command', 'application:quit'); },
+      'application:hide'() { return ipcRenderer.send('command', 'application:hide'); },
+      'application:hide-other-applications'() { return ipcRenderer.send('command', 'application:hide-other-applications'); },
+      'application:install-update'() { return ipcRenderer.send('command', 'application:install-update'); },
+      'application:unhide-all-applications'() { return ipcRenderer.send('command', 'application:unhide-all-applications'); },
+      'application:new-window'() { return ipcRenderer.send('command', 'application:new-window'); },
+      'application:new-file'() { return ipcRenderer.send('command', 'application:new-file'); },
+      'application:open'() {
+        let left;
+        const defaultPath = (left = __guard__(atom.workspace.getActiveTextEditor(), x => x.getPath())) != null ? left : __guard__(atom.project.getPaths(), x1 => x1[0]);
+        return ipcRenderer.send('open-command', 'application:open', defaultPath);
+      },
+      'application:open-file'() {
+        let left;
+        const defaultPath = (left = __guard__(atom.workspace.getActiveTextEditor(), x => x.getPath())) != null ? left : __guard__(atom.project.getPaths(), x1 => x1[0]);
+        return ipcRenderer.send('open-command', 'application:open-file', defaultPath);
+      },
+      'application:open-folder'() {
+        let left;
+        const defaultPath = (left = __guard__(atom.workspace.getActiveTextEditor(), x => x.getPath())) != null ? left : __guard__(atom.project.getPaths(), x1 => x1[0]);
+        return ipcRenderer.send('open-command', 'application:open-folder', defaultPath);
+      },
+      'application:open-dev'() { return ipcRenderer.send('command', 'application:open-dev'); },
+      'application:open-safe'() { return ipcRenderer.send('command', 'application:open-safe'); },
+      'application:add-project-folder'() { return atom.addProjectFolder(); },
+      'application:minimize'() { return ipcRenderer.send('command', 'application:minimize'); },
+      'application:zoom'() { return ipcRenderer.send('command', 'application:zoom'); },
+      'application:bring-all-windows-to-front'() { return ipcRenderer.send('command', 'application:bring-all-windows-to-front'); },
+      'application:open-your-config'() { return ipcRenderer.send('command', 'application:open-your-config'); },
+      'application:open-your-init-script'() { return ipcRenderer.send('command', 'application:open-your-init-script'); },
+      'application:open-your-keymap'() { return ipcRenderer.send('command', 'application:open-your-keymap'); },
+      'application:open-your-snippets'() { return ipcRenderer.send('command', 'application:open-your-snippets'); },
+      'application:open-your-stylesheet'() { return ipcRenderer.send('command', 'application:open-your-stylesheet'); },
+      'application:open-license'() { return this.getModel().openLicense(); },
+      'window:run-package-specs'() { return this.runPackageSpecs(); },
+      'window:run-benchmarks'() { return this.runBenchmarks(); },
+      'window:toggle-left-dock'() { return this.getModel().getLeftDock().toggle(); },
+      'window:toggle-right-dock'() { return this.getModel().getRightDock().toggle(); },
+      'window:toggle-bottom-dock'() { return this.getModel().getBottomDock().toggle(); },
+      'window:focus-next-pane'() { return this.getModel().activateNextPane(); },
+      'window:focus-previous-pane'() { return this.getModel().activatePreviousPane(); },
+      'window:focus-pane-above'() { return this.focusPaneViewAbove(); },
+      'window:focus-pane-below'() { return this.focusPaneViewBelow(); },
+      'window:focus-pane-on-left'() { return this.focusPaneViewOnLeft(); },
+      'window:focus-pane-on-right'() { return this.focusPaneViewOnRight(); },
+      'window:move-active-item-to-pane-above'() { return this.moveActiveItemToPaneAbove(); },
+      'window:move-active-item-to-pane-below'() { return this.moveActiveItemToPaneBelow(); },
+      'window:move-active-item-to-pane-on-left'() { return this.moveActiveItemToPaneOnLeft(); },
+      'window:move-active-item-to-pane-on-right'() { return this.moveActiveItemToPaneOnRight(); },
+      'window:copy-active-item-to-pane-above'() { return this.moveActiveItemToPaneAbove({keepOriginal: true}); },
+      'window:copy-active-item-to-pane-below'() { return this.moveActiveItemToPaneBelow({keepOriginal: true}); },
+      'window:copy-active-item-to-pane-on-left'() { return this.moveActiveItemToPaneOnLeft({keepOriginal: true}); },
+      'window:copy-active-item-to-pane-on-right'() { return this.moveActiveItemToPaneOnRight({keepOriginal: true}); },
+      'window:save-all'() { return this.getModel().saveAll(); },
+      'window:toggle-invisibles'() { return config.set("editor.showInvisibles", !config.get("editor.showInvisibles")); },
+      'window:log-deprecation-warnings'() { return Grim.logDeprecations(); },
+      'window:toggle-auto-indent'() { return config.set("editor.autoIndent", !config.get("editor.autoIndent")); },
+      'pane:reopen-closed-item'() { return this.getModel().reopenItem(); },
+      'core:close'() { return this.getModel().closeActivePaneItemOrEmptyPaneOrWindow(); },
+      'core:save'() { return this.getModel().saveActivePaneItem(); },
+      'core:save-as'() { return this.getModel().saveActivePaneItemAs(); }
     },
     false
-  )
+  );
 
 
-  if process.platform is 'darwin'
+  if (process.platform === 'darwin') {
     commandRegistry.add(
       'atom-workspace',
       'window:install-shell-commands',
-      (-> commandInstaller.installShellCommandsInteractively()),
+      (() => commandInstaller.installShellCommandsInteractively()),
       false
-    )
+    );
+  }
 
   commandRegistry.add(
     'atom-pane',
     {
-      'pane:save-items': -> @getModel().saveItems()
-      'pane:split-left': -> @getModel().splitLeft()
-      'pane:split-right': -> @getModel().splitRight()
-      'pane:split-up': -> @getModel().splitUp()
-      'pane:split-down': -> @getModel().splitDown()
-      'pane:split-left-and-copy-active-item': -> @getModel().splitLeft(copyActiveItem: true)
-      'pane:split-right-and-copy-active-item': -> @getModel().splitRight(copyActiveItem: true)
-      'pane:split-up-and-copy-active-item': -> @getModel().splitUp(copyActiveItem: true)
-      'pane:split-down-and-copy-active-item': -> @getModel().splitDown(copyActiveItem: true)
-      'pane:split-left-and-move-active-item': -> @getModel().splitLeft(moveActiveItem: true)
-      'pane:split-right-and-move-active-item': -> @getModel().splitRight(moveActiveItem: true)
-      'pane:split-up-and-move-active-item': -> @getModel().splitUp(moveActiveItem: true)
-      'pane:split-down-and-move-active-item': -> @getModel().splitDown(moveActiveItem: true)
-      'pane:close': -> @getModel().close()
-      'pane:close-other-items': -> @getModel().destroyInactiveItems()
-      'pane:increase-size': -> @getModel().increaseSize()
-      'pane:decrease-size': -> @getModel().decreaseSize()
+      'pane:save-items'() { return this.getModel().saveItems(); },
+      'pane:split-left'() { return this.getModel().splitLeft(); },
+      'pane:split-right'() { return this.getModel().splitRight(); },
+      'pane:split-up'() { return this.getModel().splitUp(); },
+      'pane:split-down'() { return this.getModel().splitDown(); },
+      'pane:split-left-and-copy-active-item'() { return this.getModel().splitLeft({copyActiveItem: true}); },
+      'pane:split-right-and-copy-active-item'() { return this.getModel().splitRight({copyActiveItem: true}); },
+      'pane:split-up-and-copy-active-item'() { return this.getModel().splitUp({copyActiveItem: true}); },
+      'pane:split-down-and-copy-active-item'() { return this.getModel().splitDown({copyActiveItem: true}); },
+      'pane:split-left-and-move-active-item'() { return this.getModel().splitLeft({moveActiveItem: true}); },
+      'pane:split-right-and-move-active-item'() { return this.getModel().splitRight({moveActiveItem: true}); },
+      'pane:split-up-and-move-active-item'() { return this.getModel().splitUp({moveActiveItem: true}); },
+      'pane:split-down-and-move-active-item'() { return this.getModel().splitDown({moveActiveItem: true}); },
+      'pane:close'() { return this.getModel().close(); },
+      'pane:close-other-items'() { return this.getModel().destroyInactiveItems(); },
+      'pane:increase-size'() { return this.getModel().increaseSize(); },
+      'pane:decrease-size'() { return this.getModel().decreaseSize(); }
     },
     false
-  )
+  );
 
   commandRegistry.add(
     'atom-text-editor',
     stopEventPropagation({
-      'core:undo': -> @undo()
-      'core:redo': -> @redo()
-      'core:move-left': -> @moveLeft()
-      'core:move-right': -> @moveRight()
-      'core:select-left': -> @selectLeft()
-      'core:select-right': -> @selectRight()
-      'core:select-up': -> @selectUp()
-      'core:select-down': -> @selectDown()
-      'core:select-all': -> @selectAll()
-      'editor:select-word': -> @selectWordsContainingCursors()
-      'editor:consolidate-selections': (event) -> event.abortKeyBinding() unless @consolidateSelections()
-      'editor:move-to-beginning-of-next-paragraph': -> @moveToBeginningOfNextParagraph()
-      'editor:move-to-beginning-of-previous-paragraph': -> @moveToBeginningOfPreviousParagraph()
-      'editor:move-to-beginning-of-screen-line': -> @moveToBeginningOfScreenLine()
-      'editor:move-to-beginning-of-line': -> @moveToBeginningOfLine()
-      'editor:move-to-end-of-screen-line': -> @moveToEndOfScreenLine()
-      'editor:move-to-end-of-line': -> @moveToEndOfLine()
-      'editor:move-to-first-character-of-line': -> @moveToFirstCharacterOfLine()
-      'editor:move-to-beginning-of-word': -> @moveToBeginningOfWord()
-      'editor:move-to-end-of-word': -> @moveToEndOfWord()
-      'editor:move-to-beginning-of-next-word': -> @moveToBeginningOfNextWord()
-      'editor:move-to-previous-word-boundary': -> @moveToPreviousWordBoundary()
-      'editor:move-to-next-word-boundary': -> @moveToNextWordBoundary()
-      'editor:move-to-previous-subword-boundary': -> @moveToPreviousSubwordBoundary()
-      'editor:move-to-next-subword-boundary': -> @moveToNextSubwordBoundary()
-      'editor:select-to-beginning-of-next-paragraph': -> @selectToBeginningOfNextParagraph()
-      'editor:select-to-beginning-of-previous-paragraph': -> @selectToBeginningOfPreviousParagraph()
-      'editor:select-to-end-of-line': -> @selectToEndOfLine()
-      'editor:select-to-beginning-of-line': -> @selectToBeginningOfLine()
-      'editor:select-to-end-of-word': -> @selectToEndOfWord()
-      'editor:select-to-beginning-of-word': -> @selectToBeginningOfWord()
-      'editor:select-to-beginning-of-next-word': -> @selectToBeginningOfNextWord()
-      'editor:select-to-next-word-boundary': -> @selectToNextWordBoundary()
-      'editor:select-to-previous-word-boundary': -> @selectToPreviousWordBoundary()
-      'editor:select-to-next-subword-boundary': -> @selectToNextSubwordBoundary()
-      'editor:select-to-previous-subword-boundary': -> @selectToPreviousSubwordBoundary()
-      'editor:select-to-first-character-of-line': -> @selectToFirstCharacterOfLine()
-      'editor:select-line': -> @selectLinesContainingCursors()
+      'core:undo'() { return this.undo(); },
+      'core:redo'() { return this.redo(); },
+      'core:move-left'() { return this.moveLeft(); },
+      'core:move-right'() { return this.moveRight(); },
+      'core:select-left'() { return this.selectLeft(); },
+      'core:select-right'() { return this.selectRight(); },
+      'core:select-up'() { return this.selectUp(); },
+      'core:select-down'() { return this.selectDown(); },
+      'core:select-all'() { return this.selectAll(); },
+      'editor:select-word'() { return this.selectWordsContainingCursors(); },
+      'editor:consolidate-selections'(event) { if (!this.consolidateSelections()) { return event.abortKeyBinding(); } },
+      'editor:move-to-beginning-of-next-paragraph'() { return this.moveToBeginningOfNextParagraph(); },
+      'editor:move-to-beginning-of-previous-paragraph'() { return this.moveToBeginningOfPreviousParagraph(); },
+      'editor:move-to-beginning-of-screen-line'() { return this.moveToBeginningOfScreenLine(); },
+      'editor:move-to-beginning-of-line'() { return this.moveToBeginningOfLine(); },
+      'editor:move-to-end-of-screen-line'() { return this.moveToEndOfScreenLine(); },
+      'editor:move-to-end-of-line'() { return this.moveToEndOfLine(); },
+      'editor:move-to-first-character-of-line'() { return this.moveToFirstCharacterOfLine(); },
+      'editor:move-to-beginning-of-word'() { return this.moveToBeginningOfWord(); },
+      'editor:move-to-end-of-word'() { return this.moveToEndOfWord(); },
+      'editor:move-to-beginning-of-next-word'() { return this.moveToBeginningOfNextWord(); },
+      'editor:move-to-previous-word-boundary'() { return this.moveToPreviousWordBoundary(); },
+      'editor:move-to-next-word-boundary'() { return this.moveToNextWordBoundary(); },
+      'editor:move-to-previous-subword-boundary'() { return this.moveToPreviousSubwordBoundary(); },
+      'editor:move-to-next-subword-boundary'() { return this.moveToNextSubwordBoundary(); },
+      'editor:select-to-beginning-of-next-paragraph'() { return this.selectToBeginningOfNextParagraph(); },
+      'editor:select-to-beginning-of-previous-paragraph'() { return this.selectToBeginningOfPreviousParagraph(); },
+      'editor:select-to-end-of-line'() { return this.selectToEndOfLine(); },
+      'editor:select-to-beginning-of-line'() { return this.selectToBeginningOfLine(); },
+      'editor:select-to-end-of-word'() { return this.selectToEndOfWord(); },
+      'editor:select-to-beginning-of-word'() { return this.selectToBeginningOfWord(); },
+      'editor:select-to-beginning-of-next-word'() { return this.selectToBeginningOfNextWord(); },
+      'editor:select-to-next-word-boundary'() { return this.selectToNextWordBoundary(); },
+      'editor:select-to-previous-word-boundary'() { return this.selectToPreviousWordBoundary(); },
+      'editor:select-to-next-subword-boundary'() { return this.selectToNextSubwordBoundary(); },
+      'editor:select-to-previous-subword-boundary'() { return this.selectToPreviousSubwordBoundary(); },
+      'editor:select-to-first-character-of-line'() { return this.selectToFirstCharacterOfLine(); },
+      'editor:select-line'() { return this.selectLinesContainingCursors(); }
     }),
     false
-  )
+  );
 
   commandRegistry.add(
     'atom-text-editor',
     stopEventPropagationAndGroupUndo(
       config,
       {
-        'core:backspace': -> @backspace()
-        'core:delete': -> @delete()
-        'core:cut': -> @cutSelectedText()
-        'core:copy': -> @copySelectedText()
-        'core:paste': -> @pasteText()
-        'editor:delete-to-previous-word-boundary': -> @deleteToPreviousWordBoundary()
-        'editor:delete-to-next-word-boundary': -> @deleteToNextWordBoundary()
-        'editor:delete-to-beginning-of-word': -> @deleteToBeginningOfWord()
-        'editor:delete-to-beginning-of-line': -> @deleteToBeginningOfLine()
-        'editor:delete-to-end-of-line': -> @deleteToEndOfLine()
-        'editor:delete-to-end-of-word': -> @deleteToEndOfWord()
-        'editor:delete-to-beginning-of-subword': -> @deleteToBeginningOfSubword()
-        'editor:delete-to-end-of-subword': -> @deleteToEndOfSubword()
-        'editor:delete-line': -> @deleteLine()
-        'editor:cut-to-end-of-line': -> @cutToEndOfLine()
-        'editor:cut-to-end-of-buffer-line': -> @cutToEndOfBufferLine()
-        'editor:transpose': -> @transpose()
-        'editor:upper-case': -> @upperCase()
-        'editor:lower-case': -> @lowerCase()
-        'editor:copy-selection': -> @copyOnlySelectedText()
+        'core:backspace'() { return this.backspace(); },
+        'core:delete'() { return this.delete(); },
+        'core:cut'() { return this.cutSelectedText(); },
+        'core:copy'() { return this.copySelectedText(); },
+        'core:paste'() { return this.pasteText(); },
+        'editor:delete-to-previous-word-boundary'() { return this.deleteToPreviousWordBoundary(); },
+        'editor:delete-to-next-word-boundary'() { return this.deleteToNextWordBoundary(); },
+        'editor:delete-to-beginning-of-word'() { return this.deleteToBeginningOfWord(); },
+        'editor:delete-to-beginning-of-line'() { return this.deleteToBeginningOfLine(); },
+        'editor:delete-to-end-of-line'() { return this.deleteToEndOfLine(); },
+        'editor:delete-to-end-of-word'() { return this.deleteToEndOfWord(); },
+        'editor:delete-to-beginning-of-subword'() { return this.deleteToBeginningOfSubword(); },
+        'editor:delete-to-end-of-subword'() { return this.deleteToEndOfSubword(); },
+        'editor:delete-line'() { return this.deleteLine(); },
+        'editor:cut-to-end-of-line'() { return this.cutToEndOfLine(); },
+        'editor:cut-to-end-of-buffer-line'() { return this.cutToEndOfBufferLine(); },
+        'editor:transpose'() { return this.transpose(); },
+        'editor:upper-case'() { return this.upperCase(); },
+        'editor:lower-case'() { return this.lowerCase(); },
+        'editor:copy-selection'() { return this.copyOnlySelectedText(); }
       }
     ),
     false
-  )
+  );
 
   commandRegistry.add(
     'atom-text-editor:not([mini])',
     stopEventPropagation({
-      'core:move-up': -> @moveUp()
-      'core:move-down': -> @moveDown()
-      'core:move-to-top': -> @moveToTop()
-      'core:move-to-bottom': -> @moveToBottom()
-      'core:page-up': -> @pageUp()
-      'core:page-down': -> @pageDown()
-      'core:select-to-top': -> @selectToTop()
-      'core:select-to-bottom': -> @selectToBottom()
-      'core:select-page-up': -> @selectPageUp()
-      'core:select-page-down': -> @selectPageDown()
-      'editor:add-selection-below': -> @addSelectionBelow()
-      'editor:add-selection-above': -> @addSelectionAbove()
-      'editor:split-selections-into-lines': -> @splitSelectionsIntoLines()
-      'editor:toggle-soft-tabs': -> @toggleSoftTabs()
-      'editor:toggle-soft-wrap': -> @toggleSoftWrapped()
-      'editor:fold-all': -> @foldAll()
-      'editor:unfold-all': -> @unfoldAll()
-      'editor:fold-current-row': -> @foldCurrentRow()
-      'editor:unfold-current-row': -> @unfoldCurrentRow()
-      'editor:fold-selection': -> @foldSelectedLines()
-      'editor:fold-at-indent-level-1': -> @foldAllAtIndentLevel(0)
-      'editor:fold-at-indent-level-2': -> @foldAllAtIndentLevel(1)
-      'editor:fold-at-indent-level-3': -> @foldAllAtIndentLevel(2)
-      'editor:fold-at-indent-level-4': -> @foldAllAtIndentLevel(3)
-      'editor:fold-at-indent-level-5': -> @foldAllAtIndentLevel(4)
-      'editor:fold-at-indent-level-6': -> @foldAllAtIndentLevel(5)
-      'editor:fold-at-indent-level-7': -> @foldAllAtIndentLevel(6)
-      'editor:fold-at-indent-level-8': -> @foldAllAtIndentLevel(7)
-      'editor:fold-at-indent-level-9': -> @foldAllAtIndentLevel(8)
-      'editor:log-cursor-scope': -> showCursorScope(@getCursorScope(), notificationManager)
-      'editor:copy-path': -> copyPathToClipboard(this, project, clipboard, false)
-      'editor:copy-project-path': -> copyPathToClipboard(this, project, clipboard, true)
-      'editor:toggle-indent-guide': -> config.set('editor.showIndentGuide', not config.get('editor.showIndentGuide'))
-      'editor:toggle-line-numbers': -> config.set('editor.showLineNumbers', not config.get('editor.showLineNumbers'))
-      'editor:scroll-to-cursor': -> @scrollToCursorPosition()
+      'core:move-up'() { return this.moveUp(); },
+      'core:move-down'() { return this.moveDown(); },
+      'core:move-to-top'() { return this.moveToTop(); },
+      'core:move-to-bottom'() { return this.moveToBottom(); },
+      'core:page-up'() { return this.pageUp(); },
+      'core:page-down'() { return this.pageDown(); },
+      'core:select-to-top'() { return this.selectToTop(); },
+      'core:select-to-bottom'() { return this.selectToBottom(); },
+      'core:select-page-up'() { return this.selectPageUp(); },
+      'core:select-page-down'() { return this.selectPageDown(); },
+      'editor:add-selection-below'() { return this.addSelectionBelow(); },
+      'editor:add-selection-above'() { return this.addSelectionAbove(); },
+      'editor:split-selections-into-lines'() { return this.splitSelectionsIntoLines(); },
+      'editor:toggle-soft-tabs'() { return this.toggleSoftTabs(); },
+      'editor:toggle-soft-wrap'() { return this.toggleSoftWrapped(); },
+      'editor:fold-all'() { return this.foldAll(); },
+      'editor:unfold-all'() { return this.unfoldAll(); },
+      'editor:fold-current-row'() { return this.foldCurrentRow(); },
+      'editor:unfold-current-row'() { return this.unfoldCurrentRow(); },
+      'editor:fold-selection'() { return this.foldSelectedLines(); },
+      'editor:fold-at-indent-level-1'() { return this.foldAllAtIndentLevel(0); },
+      'editor:fold-at-indent-level-2'() { return this.foldAllAtIndentLevel(1); },
+      'editor:fold-at-indent-level-3'() { return this.foldAllAtIndentLevel(2); },
+      'editor:fold-at-indent-level-4'() { return this.foldAllAtIndentLevel(3); },
+      'editor:fold-at-indent-level-5'() { return this.foldAllAtIndentLevel(4); },
+      'editor:fold-at-indent-level-6'() { return this.foldAllAtIndentLevel(5); },
+      'editor:fold-at-indent-level-7'() { return this.foldAllAtIndentLevel(6); },
+      'editor:fold-at-indent-level-8'() { return this.foldAllAtIndentLevel(7); },
+      'editor:fold-at-indent-level-9'() { return this.foldAllAtIndentLevel(8); },
+      'editor:log-cursor-scope'() { return showCursorScope(this.getCursorScope(), notificationManager); },
+      'editor:copy-path'() { return copyPathToClipboard(this, project, clipboard, false); },
+      'editor:copy-project-path'() { return copyPathToClipboard(this, project, clipboard, true); },
+      'editor:toggle-indent-guide'() { return config.set('editor.showIndentGuide', !config.get('editor.showIndentGuide')); },
+      'editor:toggle-line-numbers'() { return config.set('editor.showLineNumbers', !config.get('editor.showLineNumbers')); },
+      'editor:scroll-to-cursor'() { return this.scrollToCursorPosition(); }
     }),
     false
-  )
+  );
 
-  commandRegistry.add(
+  return commandRegistry.add(
     'atom-text-editor:not([mini])',
     stopEventPropagationAndGroupUndo(
       config,
       {
-        'editor:indent': -> @indent()
-        'editor:auto-indent': -> @autoIndentSelectedRows()
-        'editor:indent-selected-rows': -> @indentSelectedRows()
-        'editor:outdent-selected-rows': -> @outdentSelectedRows()
-        'editor:newline': -> @insertNewline()
-        'editor:newline-below': -> @insertNewlineBelow()
-        'editor:newline-above': -> @insertNewlineAbove()
-        'editor:toggle-line-comments': -> @toggleLineCommentsInSelection()
-        'editor:checkout-head-revision': -> atom.workspace.checkoutHeadRevision(this)
-        'editor:move-line-up': -> @moveLineUp()
-        'editor:move-line-down': -> @moveLineDown()
-        'editor:move-selection-left': -> @moveSelectionLeft()
-        'editor:move-selection-right': -> @moveSelectionRight()
-        'editor:duplicate-lines': -> @duplicateLines()
-        'editor:join-lines': -> @joinLines()
+        'editor:indent'() { return this.indent(); },
+        'editor:auto-indent'() { return this.autoIndentSelectedRows(); },
+        'editor:indent-selected-rows'() { return this.indentSelectedRows(); },
+        'editor:outdent-selected-rows'() { return this.outdentSelectedRows(); },
+        'editor:newline'() { return this.insertNewline(); },
+        'editor:newline-below'() { return this.insertNewlineBelow(); },
+        'editor:newline-above'() { return this.insertNewlineAbove(); },
+        'editor:toggle-line-comments'() { return this.toggleLineCommentsInSelection(); },
+        'editor:checkout-head-revision'() { return atom.workspace.checkoutHeadRevision(this); },
+        'editor:move-line-up'() { return this.moveLineUp(); },
+        'editor:move-line-down'() { return this.moveLineDown(); },
+        'editor:move-selection-left'() { return this.moveSelectionLeft(); },
+        'editor:move-selection-right'() { return this.moveSelectionRight(); },
+        'editor:duplicate-lines'() { return this.duplicateLines(); },
+        'editor:join-lines'() { return this.joinLines(); }
       }
     ),
     false
-  )
+  );
+};
 
-stopEventPropagation = (commandListeners) ->
-  newCommandListeners = {}
-  for commandName, commandListener of commandListeners
-    do (commandListener) ->
-      newCommandListeners[commandName] = (event) ->
-        event.stopPropagation()
-        commandListener.call(@getModel(), event)
-  newCommandListeners
+var stopEventPropagation = function(commandListeners) {
+  const newCommandListeners = {};
+  for (var commandName in commandListeners) {
+    const commandListener = commandListeners[commandName];
+    (commandListener =>
+      newCommandListeners[commandName] = function(event) {
+        event.stopPropagation();
+        return commandListener.call(this.getModel(), event);
+      }
+    )(commandListener);
+  }
+  return newCommandListeners;
+};
 
-stopEventPropagationAndGroupUndo = (config, commandListeners) ->
-  newCommandListeners = {}
-  for commandName, commandListener of commandListeners
-    do (commandListener) ->
-      newCommandListeners[commandName] = (event) ->
-        event.stopPropagation()
-        model = @getModel()
-        model.transact model.getUndoGroupingInterval(), ->
-          commandListener.call(model, event)
-  newCommandListeners
+var stopEventPropagationAndGroupUndo = function(config, commandListeners) {
+  const newCommandListeners = {};
+  for (var commandName in commandListeners) {
+    const commandListener = commandListeners[commandName];
+    (commandListener =>
+      newCommandListeners[commandName] = function(event) {
+        event.stopPropagation();
+        const model = this.getModel();
+        return model.transact(model.getUndoGroupingInterval(), () => commandListener.call(model, event));
+      }
+    )(commandListener);
+  }
+  return newCommandListeners;
+};
 
-showCursorScope = (descriptor, notificationManager) ->
-  list = descriptor.scopes.toString().split(',')
-  list = list.map (item) -> "* #{item}"
-  content = "Scopes at Cursor\n#{list.join('\n')}"
+var showCursorScope = function(descriptor, notificationManager) {
+  let list = descriptor.scopes.toString().split(',');
+  list = list.map(item => `* ${item}`);
+  const content = `Scopes at Cursor\n${list.join('\n')}`;
 
-  notificationManager.addInfo(content, dismissable: true)
+  return notificationManager.addInfo(content, {dismissable: true});
+};
 
-copyPathToClipboard = (editor, project, clipboard, relative) ->
-  if filePath = editor.getPath()
-    filePath = project.relativize(filePath) if relative
-    clipboard.write(filePath)
+var copyPathToClipboard = function(editor, project, clipboard, relative) {
+  let filePath;
+  if (filePath = editor.getPath()) {
+    if (relative) { filePath = project.relativize(filePath); }
+    return clipboard.write(filePath);
+  }
+};
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

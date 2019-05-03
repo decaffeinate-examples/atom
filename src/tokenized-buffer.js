@@ -1,451 +1,606 @@
-_ = require 'underscore-plus'
-{CompositeDisposable, Emitter} = require 'event-kit'
-{Point, Range} = require 'text-buffer'
-Model = require './model'
-TokenizedLine = require './tokenized-line'
-TokenIterator = require './token-iterator'
-ScopeDescriptor = require './scope-descriptor'
-TokenizedBufferIterator = require './tokenized-buffer-iterator'
-NullGrammar = require './null-grammar'
-{toFirstMateScopeId} = require './first-mate-helpers'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS202: Simplify dynamic range loops
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let TokenizedBuffer;
+const _ = require('underscore-plus');
+const {CompositeDisposable, Emitter} = require('event-kit');
+const {Point, Range} = require('text-buffer');
+const Model = require('./model');
+const TokenizedLine = require('./tokenized-line');
+const TokenIterator = require('./token-iterator');
+const ScopeDescriptor = require('./scope-descriptor');
+const TokenizedBufferIterator = require('./tokenized-buffer-iterator');
+const NullGrammar = require('./null-grammar');
+const {toFirstMateScopeId} = require('./first-mate-helpers');
 
-prefixedScopes = new Map()
+const prefixedScopes = new Map();
 
 module.exports =
-class TokenizedBuffer extends Model
-  grammar: null
-  buffer: null
-  tabLength: null
-  tokenizedLines: null
-  chunkSize: 50
-  invalidRows: null
-  visible: false
-  changeCount: 0
-
-  @deserialize: (state, atomEnvironment) ->
-    if state.bufferId
-      state.buffer = atomEnvironment.project.bufferForIdSync(state.bufferId)
-    else
-      # TODO: remove this fallback after everyone transitions to the latest version.
-      state.buffer = atomEnvironment.project.bufferForPathSync(state.bufferPath)
-    state.assert = atomEnvironment.assert
-    new this(state)
-
-  constructor: (params) ->
-    {grammar, @buffer, @tabLength, @largeFileMode, @assert} = params
-
-    @emitter = new Emitter
-    @disposables = new CompositeDisposable
-    @tokenIterator = new TokenIterator(this)
-
-    @disposables.add @buffer.registerTextDecorationLayer(this)
-
-    @setGrammar(grammar ? NullGrammar)
-
-  destroyed: ->
-    @disposables.dispose()
-    @tokenizedLines.length = 0
-
-  buildIterator: ->
-    new TokenizedBufferIterator(this)
-
-  classNameForScopeId: (id) ->
-    scope = @grammar.scopeForId(toFirstMateScopeId(id))
-    if scope
-      prefixedScope = prefixedScopes.get(scope)
-      if prefixedScope
-        prefixedScope
-      else
-        prefixedScope = "syntax--#{scope.replace(/\./g, ' syntax--')}"
-        prefixedScopes.set(scope, prefixedScope)
-        prefixedScope
-    else
-      null
-
-  getInvalidatedRanges: ->
-    []
-
-  onDidInvalidateRange: (fn) ->
-    @emitter.on 'did-invalidate-range', fn
-
-  serialize: ->
-    {
-      deserializer: 'TokenizedBuffer'
-      bufferPath: @buffer.getPath()
-      bufferId: @buffer.getId()
-      tabLength: @tabLength
-      largeFileMode: @largeFileMode
+(TokenizedBuffer = (function() {
+  TokenizedBuffer = class TokenizedBuffer extends Model {
+    static initClass() {
+      this.prototype.grammar = null;
+      this.prototype.buffer = null;
+      this.prototype.tabLength = null;
+      this.prototype.tokenizedLines = null;
+      this.prototype.chunkSize = 50;
+      this.prototype.invalidRows = null;
+      this.prototype.visible = false;
+      this.prototype.changeCount = 0;
     }
 
-  observeGrammar: (callback) ->
-    callback(@grammar)
-    @onDidChangeGrammar(callback)
+    static deserialize(state, atomEnvironment) {
+      if (state.bufferId) {
+        state.buffer = atomEnvironment.project.bufferForIdSync(state.bufferId);
+      } else {
+        // TODO: remove this fallback after everyone transitions to the latest version.
+        state.buffer = atomEnvironment.project.bufferForPathSync(state.bufferPath);
+      }
+      state.assert = atomEnvironment.assert;
+      return new (this)(state);
+    }
 
-  onDidChangeGrammar: (callback) ->
-    @emitter.on 'did-change-grammar', callback
+    constructor(params) {
+      let grammar;
+      {
+        // Hack: trick Babel/TypeScript into allowing this before super.
+        if (false) { super(); }
+        let thisFn = (() => { return this; }).toString();
+        let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+        eval(`${thisName} = this;`);
+      }
+      ({grammar, buffer: this.buffer, tabLength: this.tabLength, largeFileMode: this.largeFileMode, assert: this.assert} = params);
 
-  onDidTokenize: (callback) ->
-    @emitter.on 'did-tokenize', callback
+      this.emitter = new Emitter;
+      this.disposables = new CompositeDisposable;
+      this.tokenIterator = new TokenIterator(this);
 
-  setGrammar: (grammar) ->
-    return unless grammar? and grammar isnt @grammar
+      this.disposables.add(this.buffer.registerTextDecorationLayer(this));
 
-    @grammar = grammar
-    @rootScopeDescriptor = new ScopeDescriptor(scopes: [@grammar.scopeName])
+      this.setGrammar(grammar != null ? grammar : NullGrammar);
+    }
 
-    @grammarUpdateDisposable?.dispose()
-    @grammarUpdateDisposable = @grammar.onDidUpdate => @retokenizeLines()
-    @disposables.add(@grammarUpdateDisposable)
+    destroyed() {
+      this.disposables.dispose();
+      return this.tokenizedLines.length = 0;
+    }
 
-    @retokenizeLines()
+    buildIterator() {
+      return new TokenizedBufferIterator(this);
+    }
 
-    @emitter.emit 'did-change-grammar', grammar
+    classNameForScopeId(id) {
+      const scope = this.grammar.scopeForId(toFirstMateScopeId(id));
+      if (scope) {
+        let prefixedScope = prefixedScopes.get(scope);
+        if (prefixedScope) {
+          return prefixedScope;
+        } else {
+          prefixedScope = `syntax--${scope.replace(/\./g, ' syntax--')}`;
+          prefixedScopes.set(scope, prefixedScope);
+          return prefixedScope;
+        }
+      } else {
+        return null;
+      }
+    }
 
-  getGrammarSelectionContent: ->
-    @buffer.getTextInRange([[0, 0], [10, 0]])
+    getInvalidatedRanges() {
+      return [];
+    }
 
-  hasTokenForSelector: (selector) ->
-    for tokenizedLine in @tokenizedLines when tokenizedLine?
-      for token in tokenizedLine.tokens
-        return true if selector.matches(token.scopes)
-    false
+    onDidInvalidateRange(fn) {
+      return this.emitter.on('did-invalidate-range', fn);
+    }
 
-  retokenizeLines: ->
-    return unless @alive
-    @fullyTokenized = false
-    @tokenizedLines = new Array(@buffer.getLineCount())
-    @invalidRows = []
-    if @largeFileMode or @grammar.name is 'Null Grammar'
-      @markTokenizationComplete()
-    else
-      @invalidateRow(0)
+    serialize() {
+      return {
+        deserializer: 'TokenizedBuffer',
+        bufferPath: this.buffer.getPath(),
+        bufferId: this.buffer.getId(),
+        tabLength: this.tabLength,
+        largeFileMode: this.largeFileMode
+      };
+    }
 
-  setVisible: (@visible) ->
-    if @visible and @grammar.name isnt 'Null Grammar' and not @largeFileMode
-      @tokenizeInBackground()
+    observeGrammar(callback) {
+      callback(this.grammar);
+      return this.onDidChangeGrammar(callback);
+    }
 
-  getTabLength: -> @tabLength
+    onDidChangeGrammar(callback) {
+      return this.emitter.on('did-change-grammar', callback);
+    }
 
-  setTabLength: (@tabLength) ->
+    onDidTokenize(callback) {
+      return this.emitter.on('did-tokenize', callback);
+    }
 
-  tokenizeInBackground: ->
-    return if not @visible or @pendingChunk or not @isAlive()
+    setGrammar(grammar) {
+      if ((grammar == null) || (grammar === this.grammar)) { return; }
 
-    @pendingChunk = true
-    _.defer =>
-      @pendingChunk = false
-      @tokenizeNextChunk() if @isAlive() and @buffer.isAlive()
+      this.grammar = grammar;
+      this.rootScopeDescriptor = new ScopeDescriptor({scopes: [this.grammar.scopeName]});
 
-  tokenizeNextChunk: ->
-    rowsRemaining = @chunkSize
+      if (this.grammarUpdateDisposable != null) {
+        this.grammarUpdateDisposable.dispose();
+      }
+      this.grammarUpdateDisposable = this.grammar.onDidUpdate(() => this.retokenizeLines());
+      this.disposables.add(this.grammarUpdateDisposable);
 
-    while @firstInvalidRow()? and rowsRemaining > 0
-      startRow = @invalidRows.shift()
-      lastRow = @getLastRow()
-      continue if startRow > lastRow
+      this.retokenizeLines();
 
-      row = startRow
-      loop
-        previousStack = @stackForRow(row)
-        @tokenizedLines[row] = @buildTokenizedLineForRow(row, @stackForRow(row - 1), @openScopesForRow(row))
-        if --rowsRemaining is 0
-          filledRegion = false
-          endRow = row
-          break
-        if row is lastRow or _.isEqual(@stackForRow(row), previousStack)
-          filledRegion = true
-          endRow = row
-          break
-        row++
+      return this.emitter.emit('did-change-grammar', grammar);
+    }
 
-      @validateRow(endRow)
-      @invalidateRow(endRow + 1) unless filledRegion
+    getGrammarSelectionContent() {
+      return this.buffer.getTextInRange([[0, 0], [10, 0]]);
+    }
 
-      @emitter.emit 'did-invalidate-range', Range(Point(startRow, 0), Point(endRow + 1, 0))
+    hasTokenForSelector(selector) {
+      for (let tokenizedLine of Array.from(this.tokenizedLines)) {
+        if (tokenizedLine != null) {
+          for (let token of Array.from(tokenizedLine.tokens)) {
+            if (selector.matches(token.scopes)) { return true; }
+          }
+        }
+      }
+      return false;
+    }
 
-    if @firstInvalidRow()?
-      @tokenizeInBackground()
-    else
-      @markTokenizationComplete()
+    retokenizeLines() {
+      if (!this.alive) { return; }
+      this.fullyTokenized = false;
+      this.tokenizedLines = new Array(this.buffer.getLineCount());
+      this.invalidRows = [];
+      if (this.largeFileMode || (this.grammar.name === 'Null Grammar')) {
+        return this.markTokenizationComplete();
+      } else {
+        return this.invalidateRow(0);
+      }
+    }
 
-  markTokenizationComplete: ->
-    unless @fullyTokenized
-      @emitter.emit 'did-tokenize'
-    @fullyTokenized = true
+    setVisible(visible) {
+      this.visible = visible;
+      if (this.visible && (this.grammar.name !== 'Null Grammar') && !this.largeFileMode) {
+        return this.tokenizeInBackground();
+      }
+    }
 
-  firstInvalidRow: ->
-    @invalidRows[0]
+    getTabLength() { return this.tabLength; }
 
-  validateRow: (row) ->
-    @invalidRows.shift() while @invalidRows[0] <= row
-    return
+    setTabLength(tabLength) {
+      this.tabLength = tabLength;
+    }
 
-  invalidateRow: (row) ->
-    @invalidRows.push(row)
-    @invalidRows.sort (a, b) -> a - b
-    @tokenizeInBackground()
+    tokenizeInBackground() {
+      if (!this.visible || this.pendingChunk || !this.isAlive()) { return; }
 
-  updateInvalidRows: (start, end, delta) ->
-    @invalidRows = @invalidRows.map (row) ->
-      if row < start
-        row
-      else if start <= row <= end
-        end + delta + 1
-      else if row > end
-        row + delta
+      this.pendingChunk = true;
+      return _.defer(() => {
+        this.pendingChunk = false;
+        if (this.isAlive() && this.buffer.isAlive()) { return this.tokenizeNextChunk(); }
+      });
+    }
 
-  bufferDidChange: (e) ->
-    @changeCount = @buffer.changeCount
+    tokenizeNextChunk() {
+      let rowsRemaining = this.chunkSize;
 
-    {oldRange, newRange} = e
-    start = oldRange.start.row
-    end = oldRange.end.row
-    delta = newRange.end.row - oldRange.end.row
-    oldLineCount = oldRange.end.row - oldRange.start.row + 1
-    newLineCount = newRange.end.row - newRange.start.row + 1
+      while ((this.firstInvalidRow() != null) && (rowsRemaining > 0)) {
+        var endRow, filledRegion;
+        const startRow = this.invalidRows.shift();
+        const lastRow = this.getLastRow();
+        if (startRow > lastRow) { continue; }
 
-    @updateInvalidRows(start, end, delta)
-    previousEndStack = @stackForRow(end) # used in spill detection below
-    if @largeFileMode or @grammar.name is 'Null Grammar'
-      _.spliceWithArray(@tokenizedLines, start, oldLineCount, new Array(newLineCount))
-    else
-      newTokenizedLines = @buildTokenizedLinesForRows(start, end + delta, @stackForRow(start - 1), @openScopesForRow(start))
-      _.spliceWithArray(@tokenizedLines, start, oldLineCount, newTokenizedLines)
-      newEndStack = @stackForRow(end + delta)
-      if newEndStack and not _.isEqual(newEndStack, previousEndStack)
-        @invalidateRow(end + delta + 1)
+        let row = startRow;
+        while (true) {
+          const previousStack = this.stackForRow(row);
+          this.tokenizedLines[row] = this.buildTokenizedLineForRow(row, this.stackForRow(row - 1), this.openScopesForRow(row));
+          if (--rowsRemaining === 0) {
+            filledRegion = false;
+            endRow = row;
+            break;
+          }
+          if ((row === lastRow) || _.isEqual(this.stackForRow(row), previousStack)) {
+            filledRegion = true;
+            endRow = row;
+            break;
+          }
+          row++;
+        }
 
-  isFoldableAtRow: (row) ->
-    @isFoldableCodeAtRow(row) or @isFoldableCommentAtRow(row)
+        this.validateRow(endRow);
+        if (!filledRegion) { this.invalidateRow(endRow + 1); }
 
-  # Returns a {Boolean} indicating whether the given buffer row starts
-  # a a foldable row range due to the code's indentation patterns.
-  isFoldableCodeAtRow: (row) ->
-    if 0 <= row <= @buffer.getLastRow()
-      nextRow = @buffer.nextNonBlankRow(row)
-      tokenizedLine = @tokenizedLines[row]
-      if @buffer.isRowBlank(row) or tokenizedLine?.isComment() or not nextRow?
-        false
-      else
-        @indentLevelForRow(nextRow) > @indentLevelForRow(row)
-    else
-      false
+        this.emitter.emit('did-invalidate-range', Range(Point(startRow, 0), Point(endRow + 1, 0)));
+      }
 
-  isFoldableCommentAtRow: (row) ->
-    previousRow = row - 1
-    nextRow = row + 1
-    if nextRow > @buffer.getLastRow()
-      false
-    else
-      Boolean(
-        not (@tokenizedLines[previousRow]?.isComment()) and
-        @tokenizedLines[row]?.isComment() and
-        @tokenizedLines[nextRow]?.isComment()
-      )
+      if (this.firstInvalidRow() != null) {
+        return this.tokenizeInBackground();
+      } else {
+        return this.markTokenizationComplete();
+      }
+    }
 
-  buildTokenizedLinesForRows: (startRow, endRow, startingStack, startingopenScopes) ->
-    ruleStack = startingStack
-    openScopes = startingopenScopes
-    stopTokenizingAt = startRow + @chunkSize
-    tokenizedLines = for row in [startRow..endRow] by 1
-      if (ruleStack or row is 0) and row < stopTokenizingAt
-        tokenizedLine = @buildTokenizedLineForRow(row, ruleStack, openScopes)
-        ruleStack = tokenizedLine.ruleStack
-        openScopes = @scopesFromTags(openScopes, tokenizedLine.tags)
-      else
-        tokenizedLine = undefined
-      tokenizedLine
+    markTokenizationComplete() {
+      if (!this.fullyTokenized) {
+        this.emitter.emit('did-tokenize');
+      }
+      return this.fullyTokenized = true;
+    }
 
-    if endRow >= stopTokenizingAt
-      @invalidateRow(stopTokenizingAt)
-      @tokenizeInBackground()
+    firstInvalidRow() {
+      return this.invalidRows[0];
+    }
 
-    tokenizedLines
+    validateRow(row) {
+      while (this.invalidRows[0] <= row) { this.invalidRows.shift(); }
+    }
 
-  buildTokenizedLineForRow: (row, ruleStack, openScopes) ->
-    @buildTokenizedLineForRowWithText(row, @buffer.lineForRow(row), ruleStack, openScopes)
+    invalidateRow(row) {
+      this.invalidRows.push(row);
+      this.invalidRows.sort((a, b) => a - b);
+      return this.tokenizeInBackground();
+    }
 
-  buildTokenizedLineForRowWithText: (row, text, ruleStack = @stackForRow(row - 1), openScopes = @openScopesForRow(row)) ->
-    lineEnding = @buffer.lineEndingForRow(row)
-    {tags, ruleStack} = @grammar.tokenizeLine(text, ruleStack, row is 0, false)
-    new TokenizedLine({openScopes, text, tags, ruleStack, lineEnding, @tokenIterator, @grammar})
+    updateInvalidRows(start, end, delta) {
+      return this.invalidRows = this.invalidRows.map(function(row) {
+        if (row < start) {
+          return row;
+        } else if (start <= row && row <= end) {
+          return end + delta + 1;
+        } else if (row > end) {
+          return row + delta;
+        }
+      });
+    }
 
-  tokenizedLineForRow: (bufferRow) ->
-    if 0 <= bufferRow <= @buffer.getLastRow()
-      if tokenizedLine = @tokenizedLines[bufferRow]
-        tokenizedLine
-      else
-        text = @buffer.lineForRow(bufferRow)
-        lineEnding = @buffer.lineEndingForRow(bufferRow)
-        tags = [@grammar.startIdForScope(@grammar.scopeName), text.length, @grammar.endIdForScope(@grammar.scopeName)]
-        @tokenizedLines[bufferRow] = new TokenizedLine({openScopes: [], text, tags, lineEnding, @tokenIterator, @grammar})
+    bufferDidChange(e) {
+      this.changeCount = this.buffer.changeCount;
 
-  tokenizedLinesForRows: (startRow, endRow) ->
-    for row in [startRow..endRow] by 1
-      @tokenizedLineForRow(row)
+      const {oldRange, newRange} = e;
+      const start = oldRange.start.row;
+      const end = oldRange.end.row;
+      const delta = newRange.end.row - oldRange.end.row;
+      const oldLineCount = (oldRange.end.row - oldRange.start.row) + 1;
+      const newLineCount = (newRange.end.row - newRange.start.row) + 1;
 
-  stackForRow: (bufferRow) ->
-    @tokenizedLines[bufferRow]?.ruleStack
+      this.updateInvalidRows(start, end, delta);
+      const previousEndStack = this.stackForRow(end); // used in spill detection below
+      if (this.largeFileMode || (this.grammar.name === 'Null Grammar')) {
+        return _.spliceWithArray(this.tokenizedLines, start, oldLineCount, new Array(newLineCount));
+      } else {
+        const newTokenizedLines = this.buildTokenizedLinesForRows(start, end + delta, this.stackForRow(start - 1), this.openScopesForRow(start));
+        _.spliceWithArray(this.tokenizedLines, start, oldLineCount, newTokenizedLines);
+        const newEndStack = this.stackForRow(end + delta);
+        if (newEndStack && !_.isEqual(newEndStack, previousEndStack)) {
+          return this.invalidateRow(end + delta + 1);
+        }
+      }
+    }
 
-  openScopesForRow: (bufferRow) ->
-    if precedingLine = @tokenizedLines[bufferRow - 1]
-      @scopesFromTags(precedingLine.openScopes, precedingLine.tags)
-    else
-      []
+    isFoldableAtRow(row) {
+      return this.isFoldableCodeAtRow(row) || this.isFoldableCommentAtRow(row);
+    }
 
-  scopesFromTags: (startingScopes, tags) ->
-    scopes = startingScopes.slice()
-    for tag in tags when tag < 0
-      if (tag % 2) is -1
-        scopes.push(tag)
-      else
-        matchingStartTag = tag + 1
-        loop
-          break if scopes.pop() is matchingStartTag
-          if scopes.length is 0
-            @assert false, "Encountered an unmatched scope end tag.", (error) =>
-              error.metadata = {
-                grammarScopeName: @grammar.scopeName
-                unmatchedEndTag: @grammar.scopeForId(tag)
+    // Returns a {Boolean} indicating whether the given buffer row starts
+    // a a foldable row range due to the code's indentation patterns.
+    isFoldableCodeAtRow(row) {
+      if (0 <= row && row <= this.buffer.getLastRow()) {
+        const nextRow = this.buffer.nextNonBlankRow(row);
+        const tokenizedLine = this.tokenizedLines[row];
+        if (this.buffer.isRowBlank(row) || (tokenizedLine != null ? tokenizedLine.isComment() : undefined) || (nextRow == null)) {
+          return false;
+        } else {
+          return this.indentLevelForRow(nextRow) > this.indentLevelForRow(row);
+        }
+      } else {
+        return false;
+      }
+    }
+
+    isFoldableCommentAtRow(row) {
+      const previousRow = row - 1;
+      const nextRow = row + 1;
+      if (nextRow > this.buffer.getLastRow()) {
+        return false;
+      } else {
+        return Boolean(
+          !(this.tokenizedLines[previousRow] != null ? this.tokenizedLines[previousRow].isComment() : undefined) &&
+          (this.tokenizedLines[row] != null ? this.tokenizedLines[row].isComment() : undefined) &&
+          (this.tokenizedLines[nextRow] != null ? this.tokenizedLines[nextRow].isComment() : undefined)
+        );
+      }
+    }
+
+    buildTokenizedLinesForRows(startRow, endRow, startingStack, startingopenScopes) {
+      let ruleStack, openScopes;
+      ruleStack = startingStack;
+      openScopes = startingopenScopes;
+      const stopTokenizingAt = startRow + this.chunkSize;
+      const tokenizedLines = (() => {
+        const result = [];
+        for (let row = startRow, end = endRow; row <= end; row++) {
+          var tokenizedLine;
+          if ((ruleStack || (row === 0)) && (row < stopTokenizingAt)) {
+            tokenizedLine = this.buildTokenizedLineForRow(row, ruleStack, openScopes);
+            ({ ruleStack } = tokenizedLine);
+            openScopes = this.scopesFromTags(openScopes, tokenizedLine.tags);
+          } else {
+            tokenizedLine = undefined;
+          }
+          result.push(tokenizedLine);
+        }
+        return result;
+      })();
+
+      if (endRow >= stopTokenizingAt) {
+        this.invalidateRow(stopTokenizingAt);
+        this.tokenizeInBackground();
+      }
+
+      return tokenizedLines;
+    }
+
+    buildTokenizedLineForRow(row, ruleStack, openScopes) {
+      return this.buildTokenizedLineForRowWithText(row, this.buffer.lineForRow(row), ruleStack, openScopes);
+    }
+
+    buildTokenizedLineForRowWithText(row, text, ruleStack, openScopes) {
+      let tags;
+      if (ruleStack == null) { ruleStack = this.stackForRow(row - 1); }
+      if (openScopes == null) { openScopes = this.openScopesForRow(row); }
+      const lineEnding = this.buffer.lineEndingForRow(row);
+      ({tags, ruleStack} = this.grammar.tokenizeLine(text, ruleStack, row === 0, false));
+      return new TokenizedLine({openScopes, text, tags, ruleStack, lineEnding, tokenIterator: this.tokenIterator, grammar: this.grammar});
+    }
+
+    tokenizedLineForRow(bufferRow) {
+      if (0 <= bufferRow && bufferRow <= this.buffer.getLastRow()) {
+        let tokenizedLine;
+        if (tokenizedLine = this.tokenizedLines[bufferRow]) {
+          return tokenizedLine;
+        } else {
+          const text = this.buffer.lineForRow(bufferRow);
+          const lineEnding = this.buffer.lineEndingForRow(bufferRow);
+          const tags = [this.grammar.startIdForScope(this.grammar.scopeName), text.length, this.grammar.endIdForScope(this.grammar.scopeName)];
+          return this.tokenizedLines[bufferRow] = new TokenizedLine({openScopes: [], text, tags, lineEnding, tokenIterator: this.tokenIterator, grammar: this.grammar});
+        }
+      }
+    }
+
+    tokenizedLinesForRows(startRow, endRow) {
+      return (() => {
+        const result = [];
+        for (let row = startRow, end = endRow; row <= end; row++) {
+          result.push(this.tokenizedLineForRow(row));
+        }
+        return result;
+      })();
+    }
+
+    stackForRow(bufferRow) {
+      return (this.tokenizedLines[bufferRow] != null ? this.tokenizedLines[bufferRow].ruleStack : undefined);
+    }
+
+    openScopesForRow(bufferRow) {
+      let precedingLine;
+      if ((precedingLine = this.tokenizedLines[bufferRow - 1])) {
+        return this.scopesFromTags(precedingLine.openScopes, precedingLine.tags);
+      } else {
+        return [];
+      }
+    }
+
+    scopesFromTags(startingScopes, tags) {
+      const scopes = startingScopes.slice();
+      for (var tag of Array.from(tags)) {
+        if (tag < 0) {
+          if ((tag % 2) === -1) {
+            scopes.push(tag);
+          } else {
+            const matchingStartTag = tag + 1;
+            while (true) {
+              if (scopes.pop() === matchingStartTag) { break; }
+              if (scopes.length === 0) {
+                this.assert(false, "Encountered an unmatched scope end tag.", error => {
+                  error.metadata = {
+                    grammarScopeName: this.grammar.scopeName,
+                    unmatchedEndTag: this.grammar.scopeForId(tag)
+                  };
+                  const path = require('path');
+                  error.privateMetadataDescription = `The contents of \`${path.basename(this.buffer.getPath())}\``;
+                  return error.privateMetadata = {
+                    filePath: this.buffer.getPath(),
+                    fileContents: this.buffer.getText()
+                  };
+              });
+                break;
               }
-              path = require 'path'
-              error.privateMetadataDescription = "The contents of `#{path.basename(@buffer.getPath())}`"
-              error.privateMetadata = {
-                filePath: @buffer.getPath()
-                fileContents: @buffer.getText()
-              }
-            break
-    scopes
+            }
+          }
+        }
+      }
+      return scopes;
+    }
 
-  indentLevelForRow: (bufferRow) ->
-    line = @buffer.lineForRow(bufferRow)
-    indentLevel = 0
+    indentLevelForRow(bufferRow) {
+      const line = this.buffer.lineForRow(bufferRow);
+      let indentLevel = 0;
 
-    if line is ''
-      nextRow = bufferRow + 1
-      lineCount = @getLineCount()
-      while nextRow < lineCount
-        nextLine = @buffer.lineForRow(nextRow)
-        unless nextLine is ''
-          indentLevel = Math.ceil(@indentLevelForLine(nextLine))
-          break
-        nextRow++
+      if (line === '') {
+        let nextRow = bufferRow + 1;
+        const lineCount = this.getLineCount();
+        while (nextRow < lineCount) {
+          const nextLine = this.buffer.lineForRow(nextRow);
+          if (nextLine !== '') {
+            indentLevel = Math.ceil(this.indentLevelForLine(nextLine));
+            break;
+          }
+          nextRow++;
+        }
 
-      previousRow = bufferRow - 1
-      while previousRow >= 0
-        previousLine = @buffer.lineForRow(previousRow)
-        unless previousLine is ''
-          indentLevel = Math.max(Math.ceil(@indentLevelForLine(previousLine)), indentLevel)
-          break
-        previousRow--
+        let previousRow = bufferRow - 1;
+        while (previousRow >= 0) {
+          const previousLine = this.buffer.lineForRow(previousRow);
+          if (previousLine !== '') {
+            indentLevel = Math.max(Math.ceil(this.indentLevelForLine(previousLine)), indentLevel);
+            break;
+          }
+          previousRow--;
+        }
 
-      indentLevel
-    else
-      @indentLevelForLine(line)
+        return indentLevel;
+      } else {
+        return this.indentLevelForLine(line);
+      }
+    }
 
-  indentLevelForLine: (line) ->
-    indentLength = 0
-    for char in line
-      if char is '\t'
-        indentLength += @getTabLength() - (indentLength % @getTabLength())
-      else if char is ' '
-        indentLength++
-      else
-        break
+    indentLevelForLine(line) {
+      let indentLength = 0;
+      for (let char of Array.from(line)) {
+        if (char === '\t') {
+          indentLength += this.getTabLength() - (indentLength % this.getTabLength());
+        } else if (char === ' ') {
+          indentLength++;
+        } else {
+          break;
+        }
+      }
 
-    indentLength / @getTabLength()
+      return indentLength / this.getTabLength();
+    }
 
-  scopeDescriptorForPosition: (position) ->
-    {row, column} = @buffer.clipPosition(Point.fromObject(position))
+    scopeDescriptorForPosition(position) {
+      let scopes;
+      const {row, column} = this.buffer.clipPosition(Point.fromObject(position));
 
-    iterator = @tokenizedLineForRow(row).getTokenIterator()
-    while iterator.next()
-      if iterator.getBufferEnd() > column
-        scopes = iterator.getScopes()
-        break
+      const iterator = this.tokenizedLineForRow(row).getTokenIterator();
+      while (iterator.next()) {
+        if (iterator.getBufferEnd() > column) {
+          scopes = iterator.getScopes();
+          break;
+        }
+      }
 
-    # rebuild scope of last token if we iterated off the end
-    unless scopes?
-      scopes = iterator.getScopes()
-      scopes.push(iterator.getScopeEnds().reverse()...)
+      // rebuild scope of last token if we iterated off the end
+      if (scopes == null) {
+        scopes = iterator.getScopes();
+        scopes.push(...Array.from(iterator.getScopeEnds().reverse() || []));
+      }
 
-    new ScopeDescriptor({scopes})
+      return new ScopeDescriptor({scopes});
+    }
 
-  tokenForPosition: (position) ->
-    {row, column} = Point.fromObject(position)
-    @tokenizedLineForRow(row).tokenAtBufferColumn(column)
+    tokenForPosition(position) {
+      const {row, column} = Point.fromObject(position);
+      return this.tokenizedLineForRow(row).tokenAtBufferColumn(column);
+    }
 
-  tokenStartPositionForPosition: (position) ->
-    {row, column} = Point.fromObject(position)
-    column = @tokenizedLineForRow(row).tokenStartColumnForBufferColumn(column)
-    new Point(row, column)
+    tokenStartPositionForPosition(position) {
+      let {row, column} = Point.fromObject(position);
+      column = this.tokenizedLineForRow(row).tokenStartColumnForBufferColumn(column);
+      return new Point(row, column);
+    }
 
-  bufferRangeForScopeAtPosition: (selector, position) ->
-    position = Point.fromObject(position)
+    bufferRangeForScopeAtPosition(selector, position) {
+      let endColumn, tag, tokenIndex;
+      position = Point.fromObject(position);
 
-    {openScopes, tags} = @tokenizedLineForRow(position.row)
-    scopes = openScopes.map (tag) => @grammar.scopeForId(tag)
+      const {openScopes, tags} = this.tokenizedLineForRow(position.row);
+      const scopes = openScopes.map(tag => this.grammar.scopeForId(tag));
 
-    startColumn = 0
-    for tag, tokenIndex in tags
-      if tag < 0
-        if tag % 2 is -1
-          scopes.push(@grammar.scopeForId(tag))
-        else
-          scopes.pop()
-      else
-        endColumn = startColumn + tag
-        if endColumn >= position.column
-          break
-        else
-          startColumn = endColumn
+      let startColumn = 0;
+      for (tokenIndex = 0; tokenIndex < tags.length; tokenIndex++) {
+        tag = tags[tokenIndex];
+        if (tag < 0) {
+          if ((tag % 2) === -1) {
+            scopes.push(this.grammar.scopeForId(tag));
+          } else {
+            scopes.pop();
+          }
+        } else {
+          endColumn = startColumn + tag;
+          if (endColumn >= position.column) {
+            break;
+          } else {
+            startColumn = endColumn;
+          }
+        }
+      }
 
 
-    return unless selectorMatchesAnyScope(selector, scopes)
+      if (!selectorMatchesAnyScope(selector, scopes)) { return; }
 
-    startScopes = scopes.slice()
-    for startTokenIndex in [(tokenIndex - 1)..0] by -1
-      tag = tags[startTokenIndex]
-      if tag < 0
-        if tag % 2 is -1
-          startScopes.pop()
-        else
-          startScopes.push(@grammar.scopeForId(tag))
-      else
-        break unless selectorMatchesAnyScope(selector, startScopes)
-        startColumn -= tag
+      const startScopes = scopes.slice();
+      for (let startTokenIndex = tokenIndex - 1; startTokenIndex >= 0; startTokenIndex--) {
+        tag = tags[startTokenIndex];
+        if (tag < 0) {
+          if ((tag % 2) === -1) {
+            startScopes.pop();
+          } else {
+            startScopes.push(this.grammar.scopeForId(tag));
+          }
+        } else {
+          if (!selectorMatchesAnyScope(selector, startScopes)) { break; }
+          startColumn -= tag;
+        }
+      }
 
-    endScopes = scopes.slice()
-    for endTokenIndex in [(tokenIndex + 1)...tags.length] by 1
-      tag = tags[endTokenIndex]
-      if tag < 0
-        if tag % 2 is -1
-          endScopes.push(@grammar.scopeForId(tag))
-        else
-          endScopes.pop()
-      else
-        break unless selectorMatchesAnyScope(selector, endScopes)
-        endColumn += tag
+      const endScopes = scopes.slice();
+      for (let endTokenIndex = tokenIndex + 1, end = tags.length; endTokenIndex < end; endTokenIndex++) {
+        tag = tags[endTokenIndex];
+        if (tag < 0) {
+          if ((tag % 2) === -1) {
+            endScopes.push(this.grammar.scopeForId(tag));
+          } else {
+            endScopes.pop();
+          }
+        } else {
+          if (!selectorMatchesAnyScope(selector, endScopes)) { break; }
+          endColumn += tag;
+        }
+      }
 
-    new Range(new Point(position.row, startColumn), new Point(position.row, endColumn))
+      return new Range(new Point(position.row, startColumn), new Point(position.row, endColumn));
+    }
 
-  # Gets the row number of the last line.
-  #
-  # Returns a {Number}.
-  getLastRow: ->
-    @buffer.getLastRow()
+    // Gets the row number of the last line.
+    //
+    // Returns a {Number}.
+    getLastRow() {
+      return this.buffer.getLastRow();
+    }
 
-  getLineCount: ->
-    @buffer.getLineCount()
+    getLineCount() {
+      return this.buffer.getLineCount();
+    }
 
-  logLines: (start=0, end=@buffer.getLastRow()) ->
-    for row in [start..end]
-      line = @tokenizedLines[row].text
-      console.log row, line, line.length
-    return
+    logLines(start, end) {
+      if (start == null) { start = 0; }
+      if (end == null) { end = this.buffer.getLastRow(); }
+      for (let row = start, end1 = end, asc = start <= end1; asc ? row <= end1 : row >= end1; asc ? row++ : row--) {
+        const line = this.tokenizedLines[row].text;
+        console.log(row, line, line.length);
+      }
+    }
+  };
+  TokenizedBuffer.initClass();
+  return TokenizedBuffer;
+})());
 
-selectorMatchesAnyScope = (selector, scopes) ->
-  targetClasses = selector.replace(/^\./, '').split('.')
-  _.any scopes, (scope) ->
-    scopeClasses = scope.split('.')
-    _.isSubset(targetClasses, scopeClasses)
+var selectorMatchesAnyScope = function(selector, scopes) {
+  const targetClasses = selector.replace(/^\./, '').split('.');
+  return _.any(scopes, function(scope) {
+    const scopeClasses = scope.split('.');
+    return _.isSubset(targetClasses, scopeClasses);
+  });
+};

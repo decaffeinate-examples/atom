@@ -1,71 +1,99 @@
-{CompositeDisposable} = require 'event-kit'
-PaneResizeHandleElement = require './pane-resize-handle-element'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {CompositeDisposable} = require('event-kit');
+const PaneResizeHandleElement = require('./pane-resize-handle-element');
 
-class PaneAxisElement extends HTMLElement
-  attachedCallback: ->
-    @subscriptions ?= @subscribeToModel()
-    @childAdded({child, index}) for child, index in @model.getChildren()
+class PaneAxisElement extends HTMLElement {
+  attachedCallback() {
+    if (this.subscriptions == null) { this.subscriptions = this.subscribeToModel(); }
+    return Array.from(this.model.getChildren()).map((child, index) => this.childAdded({child, index}));
+  }
 
-  detachedCallback: ->
-    @subscriptions.dispose()
-    @subscriptions = null
-    @childRemoved({child}) for child in @model.getChildren()
+  detachedCallback() {
+    this.subscriptions.dispose();
+    this.subscriptions = null;
+    return Array.from(this.model.getChildren()).map((child) => this.childRemoved({child}));
+  }
 
-  initialize: (@model, @viewRegistry) ->
-    @subscriptions ?= @subscribeToModel()
-    @childAdded({child, index}) for child, index in @model.getChildren()
+  initialize(model, viewRegistry) {
+    this.model = model;
+    this.viewRegistry = viewRegistry;
+    if (this.subscriptions == null) { this.subscriptions = this.subscribeToModel(); }
+    const iterable = this.model.getChildren();
+    for (let index = 0; index < iterable.length; index++) { const child = iterable[index]; this.childAdded({child, index}); }
 
-    switch @model.getOrientation()
-      when 'horizontal'
-        @classList.add('horizontal', 'pane-row')
-      when 'vertical'
-        @classList.add('vertical', 'pane-column')
-    this
+    switch (this.model.getOrientation()) {
+      case 'horizontal':
+        this.classList.add('horizontal', 'pane-row');
+        break;
+      case 'vertical':
+        this.classList.add('vertical', 'pane-column');
+        break;
+    }
+    return this;
+  }
 
-  subscribeToModel: ->
-    subscriptions = new CompositeDisposable
-    subscriptions.add @model.onDidAddChild(@childAdded.bind(this))
-    subscriptions.add @model.onDidRemoveChild(@childRemoved.bind(this))
-    subscriptions.add @model.onDidReplaceChild(@childReplaced.bind(this))
-    subscriptions.add @model.observeFlexScale(@flexScaleChanged.bind(this))
-    subscriptions
+  subscribeToModel() {
+    const subscriptions = new CompositeDisposable;
+    subscriptions.add(this.model.onDidAddChild(this.childAdded.bind(this)));
+    subscriptions.add(this.model.onDidRemoveChild(this.childRemoved.bind(this)));
+    subscriptions.add(this.model.onDidReplaceChild(this.childReplaced.bind(this)));
+    subscriptions.add(this.model.observeFlexScale(this.flexScaleChanged.bind(this)));
+    return subscriptions;
+  }
 
-  isPaneResizeHandleElement: (element) ->
-    element?.nodeName.toLowerCase() is 'atom-pane-resize-handle'
+  isPaneResizeHandleElement(element) {
+    return (element != null ? element.nodeName.toLowerCase() : undefined) === 'atom-pane-resize-handle';
+  }
 
-  childAdded: ({child, index}) ->
-    view = @viewRegistry.getView(child)
-    @insertBefore(view, @children[index * 2])
+  childAdded({child, index}) {
+    let resizeHandle;
+    const view = this.viewRegistry.getView(child);
+    this.insertBefore(view, this.children[index * 2]);
 
-    prevElement = view.previousSibling
-    # if previous element is not pane resize element, then insert new resize element
-    if prevElement? and not @isPaneResizeHandleElement(prevElement)
-      resizeHandle = document.createElement('atom-pane-resize-handle')
-      @insertBefore(resizeHandle, view)
+    const prevElement = view.previousSibling;
+    // if previous element is not pane resize element, then insert new resize element
+    if ((prevElement != null) && !this.isPaneResizeHandleElement(prevElement)) {
+      resizeHandle = document.createElement('atom-pane-resize-handle');
+      this.insertBefore(resizeHandle, view);
+    }
 
-    nextElement = view.nextSibling
-    # if next element isnot resize element, then insert new resize element
-    if nextElement? and not @isPaneResizeHandleElement(nextElement)
-      resizeHandle = document.createElement('atom-pane-resize-handle')
-      @insertBefore(resizeHandle, nextElement)
+    const nextElement = view.nextSibling;
+    // if next element isnot resize element, then insert new resize element
+    if ((nextElement != null) && !this.isPaneResizeHandleElement(nextElement)) {
+      resizeHandle = document.createElement('atom-pane-resize-handle');
+      return this.insertBefore(resizeHandle, nextElement);
+    }
+  }
 
-  childRemoved: ({child}) ->
-    view = @viewRegistry.getView(child)
-    siblingView = view.previousSibling
-    # make sure next sibling view is pane resize view
-    if siblingView? and @isPaneResizeHandleElement(siblingView)
-      siblingView.remove()
-    view.remove()
+  childRemoved({child}) {
+    const view = this.viewRegistry.getView(child);
+    const siblingView = view.previousSibling;
+    // make sure next sibling view is pane resize view
+    if ((siblingView != null) && this.isPaneResizeHandleElement(siblingView)) {
+      siblingView.remove();
+    }
+    return view.remove();
+  }
 
-  childReplaced: ({index, oldChild, newChild}) ->
-    focusedElement = document.activeElement if @hasFocus()
-    @childRemoved({child: oldChild, index})
-    @childAdded({child: newChild, index})
-    focusedElement?.focus() if document.activeElement is document.body
+  childReplaced({index, oldChild, newChild}) {
+    let focusedElement;
+    if (this.hasFocus()) { focusedElement = document.activeElement; }
+    this.childRemoved({child: oldChild, index});
+    this.childAdded({child: newChild, index});
+    if (document.activeElement === document.body) { return (focusedElement != null ? focusedElement.focus() : undefined); }
+  }
 
-  flexScaleChanged: (flexScale) -> @style.flexGrow = flexScale
+  flexScaleChanged(flexScale) { return this.style.flexGrow = flexScale; }
 
-  hasFocus: ->
-    this is document.activeElement or @contains(document.activeElement)
+  hasFocus() {
+    return (this === document.activeElement) || this.contains(document.activeElement);
+  }
+}
 
-module.exports = PaneAxisElement = document.registerElement 'atom-pane-axis', prototype: PaneAxisElement.prototype
+module.exports = (PaneAxisElement = document.registerElement('atom-pane-axis', {prototype: PaneAxisElement.prototype}));

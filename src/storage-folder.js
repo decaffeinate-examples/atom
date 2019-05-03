@@ -1,39 +1,58 @@
-path = require "path"
-fs = require "fs-plus"
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let StorageFolder;
+const path = require("path");
+const fs = require("fs-plus");
 
 module.exports =
-class StorageFolder
-  constructor: (containingPath) ->
-    @path = path.join(containingPath, "storage") if containingPath?
+(StorageFolder = class StorageFolder {
+  constructor(containingPath) {
+    if (containingPath != null) { this.path = path.join(containingPath, "storage"); }
+  }
 
-  clear: ->
-    return unless @path?
+  clear() {
+    if (this.path == null) { return; }
 
-    try
-      fs.removeSync(@path)
-    catch error
-      console.warn "Error deleting #{@path}", error.stack, error
+    try {
+      return fs.removeSync(this.path);
+    } catch (error) {
+      return console.warn(`Error deleting ${this.path}`, error.stack, error);
+    }
+  }
 
-  storeSync: (name, object) ->
-    return unless @path?
+  storeSync(name, object) {
+    if (this.path == null) { return; }
 
-    fs.writeFileSync(@pathForKey(name), JSON.stringify(object), 'utf8')
+    return fs.writeFileSync(this.pathForKey(name), JSON.stringify(object), 'utf8');
+  }
 
-  load: (name) ->
-    return unless @path?
+  load(name) {
+    let error, stateString;
+    if (this.path == null) { return; }
 
-    statePath = @pathForKey(name)
-    try
-      stateString = fs.readFileSync(statePath, 'utf8')
-    catch error
-      unless error.code is 'ENOENT'
-        console.warn "Error reading state file: #{statePath}", error.stack, error
-      return undefined
+    const statePath = this.pathForKey(name);
+    try {
+      stateString = fs.readFileSync(statePath, 'utf8');
+    } catch (error1) {
+      error = error1;
+      if (error.code !== 'ENOENT') {
+        console.warn(`Error reading state file: ${statePath}`, error.stack, error);
+      }
+      return undefined;
+    }
 
-    try
-      JSON.parse(stateString)
-    catch error
-      console.warn "Error parsing state file: #{statePath}", error.stack, error
+    try {
+      return JSON.parse(stateString);
+    } catch (error2) {
+      error = error2;
+      return console.warn(`Error parsing state file: ${statePath}`, error.stack, error);
+    }
+  }
 
-  pathForKey: (name) -> path.join(@getPath(), name)
-  getPath: -> @path
+  pathForKey(name) { return path.join(this.getPath(), name); }
+  getPath() { return this.path; }
+});

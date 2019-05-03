@@ -1,23 +1,41 @@
-nextInstanceId = 1
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Model;
+let nextInstanceId = 1;
 
 module.exports =
-class Model
-  @resetNextInstanceId: -> nextInstanceId = 1
+(Model = (function() {
+  Model = class Model {
+    static initClass() {
+  
+      this.prototype.alive = true;
+    }
+    static resetNextInstanceId() { return nextInstanceId = 1; }
 
-  alive: true
+    constructor(params) {
+      this.assignId(params != null ? params.id : undefined);
+    }
 
-  constructor: (params) ->
-    @assignId(params?.id)
+    assignId(id) {
+      if (this.id == null) { this.id = id != null ? id : nextInstanceId++; }
+      if (id >= nextInstanceId) { return nextInstanceId = id + 1; }
+    }
 
-  assignId: (id) ->
-    @id ?= id ? nextInstanceId++
-    nextInstanceId = id + 1 if id >= nextInstanceId
+    destroy() {
+      if (!this.isAlive()) { return; }
+      this.alive = false;
+      return (typeof this.destroyed === 'function' ? this.destroyed() : undefined);
+    }
 
-  destroy: ->
-    return unless @isAlive()
-    @alive = false
-    @destroyed?()
+    isAlive() { return this.alive; }
 
-  isAlive: -> @alive
-
-  isDestroyed: -> not @isAlive()
+    isDestroyed() { return !this.isAlive(); }
+  };
+  Model.initClass();
+  return Model;
+})());

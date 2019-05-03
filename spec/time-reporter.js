@@ -1,69 +1,101 @@
-_ = require 'underscore-plus'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let TimeReporter;
+const _ = require('underscore-plus');
 
 module.exports =
-class TimeReporter extends jasmine.Reporter
+(TimeReporter = class TimeReporter extends jasmine.Reporter {
 
-  constructor: ->
-    window.timedSpecs = []
-    window.timedSuites = {}
+  constructor() {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    window.timedSpecs = [];
+    window.timedSuites = {};
 
-    window.logLongestSpec = => @logLongestSpecs(1)
-    window.logLongestSpecs = (number) => @logLongestSpecs(number)
-    window.logLongestSuite = => @logLongestSuites(1)
-    window.logLongestSuites = (number) => @logLongestSuites(number)
+    window.logLongestSpec = () => this.logLongestSpecs(1);
+    window.logLongestSpecs = number => this.logLongestSpecs(number);
+    window.logLongestSuite = () => this.logLongestSuites(1);
+    window.logLongestSuites = number => this.logLongestSuites(number);
+  }
 
-  logLongestSuites: (number=10, log) ->
-    return unless window.timedSuites.length > 0
+  logLongestSuites(number, log) {
+    if (number == null) { number = 10; }
+    if (!(window.timedSuites.length > 0)) { return; }
 
-    log ?= (line) -> console.log(line)
-    log "Longest running suites:"
-    suites = _.map(window.timedSuites, (key, value) -> [value, key])
-    for suite in _.sortBy(suites, (suite) -> -suite[1])[0...number]
-      time = Math.round(suite[1] / 100) / 10
-      log "  #{suite[0]} (#{time}s)"
-    undefined
+    if (log == null) { log = line => console.log(line); }
+    log("Longest running suites:");
+    const suites = _.map(window.timedSuites, (key, value) => [value, key]);
+    for (let suite of Array.from(_.sortBy(suites, suite => -suite[1]).slice(0, number))) {
+      const time = Math.round(suite[1] / 100) / 10;
+      log(`  ${suite[0]} (${time}s)`);
+    }
+    return undefined;
+  }
 
-  logLongestSpecs: (number=10, log) ->
-    return unless window.timedSpecs.length > 0
+  logLongestSpecs(number, log) {
+    if (number == null) { number = 10; }
+    if (!(window.timedSpecs.length > 0)) { return; }
 
-    log ?= (line) -> console.log(line)
-    log "Longest running specs:"
-    for spec in _.sortBy(window.timedSpecs, (spec) -> -spec.time)[0...number]
-      time = Math.round(spec.time / 100) / 10
-      log "#{spec.description} (#{time}s)"
-    undefined
+    if (log == null) { log = line => console.log(line); }
+    log("Longest running specs:");
+    for (let spec of Array.from(_.sortBy(window.timedSpecs, spec => -spec.time).slice(0, number))) {
+      const time = Math.round(spec.time / 100) / 10;
+      log(`${spec.description} (${time}s)`);
+    }
+    return undefined;
+  }
 
-  reportSpecStarting: (spec) ->
-    stack = [spec.description]
-    suite = spec.suite
-    while suite
-      stack.unshift suite.description
-      @suite = suite.description
-      suite = suite.parentSuite
+  reportSpecStarting(spec) {
+    const stack = [spec.description];
+    let { suite } = spec;
+    while (suite) {
+      stack.unshift(suite.description);
+      this.suite = suite.description;
+      suite = suite.parentSuite;
+    }
 
-    reducer = (memo, description, index) ->
-      if index is 0
-        "#{description}"
-      else
-        "#{memo}\n#{_.multiplyString('  ', index)}#{description}"
-    @description = _.reduce(stack, reducer, '')
-    @time = Date.now()
+    const reducer = function(memo, description, index) {
+      if (index === 0) {
+        return `${description}`;
+      } else {
+        return `${memo}\n${_.multiplyString('  ', index)}${description}`;
+      }
+    };
+    this.description = _.reduce(stack, reducer, '');
+    return this.time = Date.now();
+  }
 
-  reportSpecResults: (spec) ->
-    return unless @time? and @description?
+  reportSpecResults(spec) {
+    if ((this.time == null) || (this.description == null)) { return; }
 
-    duration = Date.now() - @time
+    const duration = Date.now() - this.time;
 
-    if duration > 0
-      window.timedSpecs.push
-        description: @description
-        time: duration
+    if (duration > 0) {
+      window.timedSpecs.push({
+        description: this.description,
+        time: duration,
         fullName: spec.getFullName()
+      });
 
-      if window.timedSuites[@suite]
-        window.timedSuites[@suite] += duration
-      else
-        window.timedSuites[@suite] = duration
+      if (window.timedSuites[this.suite]) {
+        window.timedSuites[this.suite] += duration;
+      } else {
+        window.timedSuites[this.suite] = duration;
+      }
+    }
 
-    @time = null
-    @description = null
+    this.time = null;
+    return this.description = null;
+  }
+});

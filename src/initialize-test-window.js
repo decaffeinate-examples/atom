@@ -1,98 +1,121 @@
-ipcHelpers = require './ipc-helpers'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const ipcHelpers = require('./ipc-helpers');
 
-cloneObject = (object) ->
-  clone = {}
-  clone[key] = value for key, value of object
-  clone
+const cloneObject = function(object) {
+  const clone = {};
+  for (let key in object) { const value = object[key]; clone[key] = value; }
+  return clone;
+};
 
-module.exports = ({blobStore}) ->
-  startCrashReporter = require('./crash-reporter-start')
-  {remote} = require 'electron'
+module.exports = function({blobStore}) {
+  let getWindowLoadSettings, headless;
+  const startCrashReporter = require('./crash-reporter-start');
+  const {remote} = require('electron');
 
-  startCrashReporter() # Before anything else
+  startCrashReporter(); // Before anything else
 
-  exitWithStatusCode = (status) ->
-    remote.app.emit('will-quit')
-    remote.process.exit(status)
+  const exitWithStatusCode = function(status) {
+    remote.app.emit('will-quit');
+    return remote.process.exit(status);
+  };
 
-  try
-    path = require 'path'
-    {ipcRenderer} = require 'electron'
-    getWindowLoadSettings = require './get-window-load-settings'
-    CompileCache = require './compile-cache'
-    AtomEnvironment = require '../src/atom-environment'
-    ApplicationDelegate = require '../src/application-delegate'
-    Clipboard = require '../src/clipboard'
-    TextEditor = require '../src/text-editor'
-    require './electron-shims'
+  try {
+    let legacyTestRunnerPath, logFile, packageRoot, testPaths, testRunnerPath;
+    const path = require('path');
+    const {ipcRenderer} = require('electron');
+    getWindowLoadSettings = require('./get-window-load-settings');
+    const CompileCache = require('./compile-cache');
+    const AtomEnvironment = require('../src/atom-environment');
+    const ApplicationDelegate = require('../src/application-delegate');
+    const Clipboard = require('../src/clipboard');
+    const TextEditor = require('../src/text-editor');
+    require('./electron-shims');
 
-    {testRunnerPath, legacyTestRunnerPath, headless, logFile, testPaths} = getWindowLoadSettings()
+    ({testRunnerPath, legacyTestRunnerPath, headless, logFile, testPaths} = getWindowLoadSettings());
 
-    unless headless
-      # Show window synchronously so a focusout doesn't fire on input elements
-      # that are focused in the very first spec run.
-      remote.getCurrentWindow().show()
+    if (!headless) {
+      // Show window synchronously so a focusout doesn't fire on input elements
+      // that are focused in the very first spec run.
+      remote.getCurrentWindow().show();
+    }
 
-    handleKeydown = (event) ->
-      # Reload: cmd-r / ctrl-r
-      if (event.metaKey or event.ctrlKey) and event.keyCode is 82
-        ipcHelpers.call('window-method', 'reload')
+    const handleKeydown = function(event) {
+      // Reload: cmd-r / ctrl-r
+      if ((event.metaKey || event.ctrlKey) && (event.keyCode === 82)) {
+        ipcHelpers.call('window-method', 'reload');
+      }
 
-      # Toggle Dev Tools: cmd-alt-i (Mac) / ctrl-shift-i (Linux/Windows)
-      if event.keyCode is 73 and (
-        (process.platform is 'darwin' and event.metaKey and event.altKey) or
-        (process.platform isnt 'darwin' and event.ctrlKey and event.shiftKey))
-          ipcHelpers.call('window-method', 'toggleDevTools')
+      // Toggle Dev Tools: cmd-alt-i (Mac) / ctrl-shift-i (Linux/Windows)
+      if ((event.keyCode === 73) && (
+        ((process.platform === 'darwin') && event.metaKey && event.altKey) ||
+        ((process.platform !== 'darwin') && event.ctrlKey && event.shiftKey))) {
+          ipcHelpers.call('window-method', 'toggleDevTools');
+        }
 
-      # Close: cmd-w / ctrl-w
-      if (event.metaKey or event.ctrlKey) and event.keyCode is 87
-        ipcHelpers.call('window-method', 'close')
+      // Close: cmd-w / ctrl-w
+      if ((event.metaKey || event.ctrlKey) && (event.keyCode === 87)) {
+        ipcHelpers.call('window-method', 'close');
+      }
 
-      # Copy: cmd-c / ctrl-c
-      if (event.metaKey or event.ctrlKey) and event.keyCode is 67
-        ipcHelpers.call('window-method', 'copy')
+      // Copy: cmd-c / ctrl-c
+      if ((event.metaKey || event.ctrlKey) && (event.keyCode === 67)) {
+        return ipcHelpers.call('window-method', 'copy');
+      }
+    };
 
-    window.addEventListener('keydown', handleKeydown, true)
+    window.addEventListener('keydown', handleKeydown, true);
 
-    # Add 'exports' to module search path.
-    exportsPath = path.join(getWindowLoadSettings().resourcePath, 'exports')
-    require('module').globalPaths.push(exportsPath)
-    process.env.NODE_PATH = exportsPath # Set NODE_PATH env variable since tasks may need it.
+    // Add 'exports' to module search path.
+    const exportsPath = path.join(getWindowLoadSettings().resourcePath, 'exports');
+    require('module').globalPaths.push(exportsPath);
+    process.env.NODE_PATH = exportsPath; // Set NODE_PATH env variable since tasks may need it.
 
-    # Set up optional transpilation for packages under test if any
-    FindParentDir = require 'find-parent-dir'
-    if packageRoot = FindParentDir.sync(testPaths[0], 'package.json')
-      packageMetadata = require(path.join(packageRoot, 'package.json'))
-      if packageMetadata.atomTranspilers
-        CompileCache.addTranspilerConfigForPath(packageRoot, packageMetadata.name, packageMetadata, packageMetadata.atomTranspilers)
+    // Set up optional transpilation for packages under test if any
+    const FindParentDir = require('find-parent-dir');
+    if (packageRoot = FindParentDir.sync(testPaths[0], 'package.json')) {
+      const packageMetadata = require(path.join(packageRoot, 'package.json'));
+      if (packageMetadata.atomTranspilers) {
+        CompileCache.addTranspilerConfigForPath(packageRoot, packageMetadata.name, packageMetadata, packageMetadata.atomTranspilers);
+      }
+    }
 
-    document.title = "Spec Suite"
+    document.title = "Spec Suite";
 
-    clipboard = new Clipboard
-    TextEditor.setClipboard(clipboard)
-    TextEditor.viewForItem = (item) -> atom.views.getView(item)
+    const clipboard = new Clipboard;
+    TextEditor.setClipboard(clipboard);
+    TextEditor.viewForItem = item => atom.views.getView(item);
 
-    testRunner = require(testRunnerPath)
-    legacyTestRunner = require(legacyTestRunnerPath)
-    buildDefaultApplicationDelegate = -> new ApplicationDelegate()
-    buildAtomEnvironment = (params) ->
-      params = cloneObject(params)
-      params.clipboard = clipboard unless params.hasOwnProperty("clipboard")
-      params.blobStore = blobStore unless params.hasOwnProperty("blobStore")
-      params.onlyLoadBaseStyleSheets = true unless params.hasOwnProperty("onlyLoadBaseStyleSheets")
-      atomEnvironment = new AtomEnvironment(params)
-      atomEnvironment.initialize(params)
-      atomEnvironment
+    const testRunner = require(testRunnerPath);
+    const legacyTestRunner = require(legacyTestRunnerPath);
+    const buildDefaultApplicationDelegate = () => new ApplicationDelegate();
+    const buildAtomEnvironment = function(params) {
+      params = cloneObject(params);
+      if (!params.hasOwnProperty("clipboard")) { params.clipboard = clipboard; }
+      if (!params.hasOwnProperty("blobStore")) { params.blobStore = blobStore; }
+      if (!params.hasOwnProperty("onlyLoadBaseStyleSheets")) { params.onlyLoadBaseStyleSheets = true; }
+      const atomEnvironment = new AtomEnvironment(params);
+      atomEnvironment.initialize(params);
+      return atomEnvironment;
+    };
 
-    promise = testRunner({
+    const promise = testRunner({
       logFile, headless, testPaths, buildAtomEnvironment, buildDefaultApplicationDelegate, legacyTestRunner
-    })
+    });
 
-    promise.then (statusCode) ->
-      exitWithStatusCode(statusCode) if getWindowLoadSettings().headless
-  catch error
-    if getWindowLoadSettings().headless
-      console.error(error.stack ? error)
-      exitWithStatusCode(1)
-    else
-      throw error
+    return promise.then(function(statusCode) {
+      if (getWindowLoadSettings().headless) { return exitWithStatusCode(statusCode); }
+    });
+  } catch (error) {
+    if (getWindowLoadSettings().headless) {
+      console.error(error.stack != null ? error.stack : error);
+      return exitWithStatusCode(1);
+    } else {
+      throw error;
+    }
+  }
+};

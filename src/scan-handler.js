@@ -1,56 +1,73 @@
-path = require "path"
-async = require "async"
-{PathSearcher, PathScanner, search} = require 'scandal'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require("path");
+const async = require("async");
+const {PathSearcher, PathScanner, search} = require('scandal');
 
-module.exports = (rootPaths, regexSource, options, searchOptions={}) ->
-  callback = @async()
+module.exports = function(rootPaths, regexSource, options, searchOptions) {
+  if (searchOptions == null) { searchOptions = {}; }
+  const callback = this.async();
 
-  PATHS_COUNTER_SEARCHED_CHUNK = 50
-  pathsSearched = 0
+  const PATHS_COUNTER_SEARCHED_CHUNK = 50;
+  let pathsSearched = 0;
 
-  searcher = new PathSearcher(searchOptions)
+  const searcher = new PathSearcher(searchOptions);
 
-  searcher.on 'file-error', ({code, path, message}) ->
-    emit('scan:file-error', {code, path, message})
+  searcher.on('file-error', ({code, path, message}) => emit('scan:file-error', {code, path, message}));
 
-  searcher.on 'results-found', (result) ->
-    emit('scan:result-found', result)
+  searcher.on('results-found', result => emit('scan:result-found', result));
 
-  flags = "g"
-  flags += "i" if options.ignoreCase
-  regex = new RegExp(regexSource, flags)
+  let flags = "g";
+  if (options.ignoreCase) { flags += "i"; }
+  const regex = new RegExp(regexSource, flags);
 
-  async.each(
+  return async.each(
     rootPaths,
-    (rootPath, next) ->
-      options2 = Object.assign {}, options,
-        inclusions: processPaths(rootPath, options.inclusions)
+    function(rootPath, next) {
+      const options2 = Object.assign({}, options, {
+        inclusions: processPaths(rootPath, options.inclusions),
         globalExclusions: processPaths(rootPath, options.globalExclusions)
+      }
+      );
 
-      scanner = new PathScanner(rootPath, options2)
+      const scanner = new PathScanner(rootPath, options2);
 
-      scanner.on 'path-found', ->
-        pathsSearched++
-        if pathsSearched % PATHS_COUNTER_SEARCHED_CHUNK is 0
-          emit('scan:paths-searched', pathsSearched)
+      scanner.on('path-found', function() {
+        pathsSearched++;
+        if ((pathsSearched % PATHS_COUNTER_SEARCHED_CHUNK) === 0) {
+          return emit('scan:paths-searched', pathsSearched);
+        }
+      });
 
-      search regex, scanner, searcher, ->
-        emit('scan:paths-searched', pathsSearched)
-        next()
+      return search(regex, scanner, searcher, function() {
+        emit('scan:paths-searched', pathsSearched);
+        return next();
+      });
+    },
     callback
-  )
+  );
+};
 
-processPaths = (rootPath, paths) ->
-  return paths unless paths?.length > 0
-  rootPathBase = path.basename(rootPath)
-  results = []
-  for givenPath in paths
-    segments = givenPath.split(path.sep)
-    firstSegment = segments.shift()
-    results.push(givenPath)
-    if firstSegment is rootPathBase
-      if segments.length is 0
-        results.push(path.join("**", "*"))
-      else
-        results.push(path.join(segments...))
-  results
+var processPaths = function(rootPath, paths) {
+  if (!((paths != null ? paths.length : undefined) > 0)) { return paths; }
+  const rootPathBase = path.basename(rootPath);
+  const results = [];
+  for (let givenPath of Array.from(paths)) {
+    const segments = givenPath.split(path.sep);
+    const firstSegment = segments.shift();
+    results.push(givenPath);
+    if (firstSegment === rootPathBase) {
+      if (segments.length === 0) {
+        results.push(path.join("**", "*"));
+      } else {
+        results.push(path.join(...Array.from(segments || [])));
+      }
+    }
+  }
+  return results;
+};

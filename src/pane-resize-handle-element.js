@@ -1,68 +1,89 @@
-class PaneResizeHandleElement extends HTMLElement
-  createdCallback: ->
-    @resizePane = @resizePane.bind(this)
-    @resizeStopped = @resizeStopped.bind(this)
-    @subscribeToDOMEvents()
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+class PaneResizeHandleElement extends HTMLElement {
+  createdCallback() {
+    this.resizePane = this.resizePane.bind(this);
+    this.resizeStopped = this.resizeStopped.bind(this);
+    return this.subscribeToDOMEvents();
+  }
 
-  subscribeToDOMEvents: ->
-    @addEventListener 'dblclick', @resizeToFitContent.bind(this)
-    @addEventListener 'mousedown', @resizeStarted.bind(this)
+  subscribeToDOMEvents() {
+    this.addEventListener('dblclick', this.resizeToFitContent.bind(this));
+    return this.addEventListener('mousedown', this.resizeStarted.bind(this));
+  }
 
-  attachedCallback: ->
-    @isHorizontal = @parentElement.classList.contains("horizontal")
-    @classList.add if @isHorizontal then 'horizontal' else 'vertical'
+  attachedCallback() {
+    this.isHorizontal = this.parentElement.classList.contains("horizontal");
+    return this.classList.add(this.isHorizontal ? 'horizontal' : 'vertical');
+  }
 
-  detachedCallback: ->
-    @resizeStopped()
+  detachedCallback() {
+    return this.resizeStopped();
+  }
 
-  resizeToFitContent: ->
-    # clear flex-grow css style of both pane
-    @previousSibling?.model.setFlexScale(1)
-    @nextSibling?.model.setFlexScale(1)
+  resizeToFitContent() {
+    // clear flex-grow css style of both pane
+    if (this.previousSibling != null) {
+      this.previousSibling.model.setFlexScale(1);
+    }
+    return (this.nextSibling != null ? this.nextSibling.model.setFlexScale(1) : undefined);
+  }
 
-  resizeStarted: (e) ->
-    e.stopPropagation()
-    document.addEventListener 'mousemove', @resizePane
-    document.addEventListener 'mouseup', @resizeStopped
+  resizeStarted(e) {
+    e.stopPropagation();
+    document.addEventListener('mousemove', this.resizePane);
+    return document.addEventListener('mouseup', this.resizeStopped);
+  }
 
-  resizeStopped: ->
-    document.removeEventListener 'mousemove', @resizePane
-    document.removeEventListener 'mouseup', @resizeStopped
+  resizeStopped() {
+    document.removeEventListener('mousemove', this.resizePane);
+    return document.removeEventListener('mouseup', this.resizeStopped);
+  }
 
-  calcRatio: (ratio1, ratio2, total) ->
-    allRatio = ratio1 + ratio2
-    [total * ratio1 / allRatio, total * ratio2 / allRatio]
+  calcRatio(ratio1, ratio2, total) {
+    const allRatio = ratio1 + ratio2;
+    return [(total * ratio1) / allRatio, (total * ratio2) / allRatio];
+  }
 
-  setFlexGrow: (prevSize, nextSize) ->
-    @prevModel = @previousSibling.model
-    @nextModel = @nextSibling.model
-    totalScale = @prevModel.getFlexScale() + @nextModel.getFlexScale()
-    flexGrows = @calcRatio(prevSize, nextSize, totalScale)
-    @prevModel.setFlexScale flexGrows[0]
-    @nextModel.setFlexScale flexGrows[1]
+  setFlexGrow(prevSize, nextSize) {
+    this.prevModel = this.previousSibling.model;
+    this.nextModel = this.nextSibling.model;
+    const totalScale = this.prevModel.getFlexScale() + this.nextModel.getFlexScale();
+    const flexGrows = this.calcRatio(prevSize, nextSize, totalScale);
+    this.prevModel.setFlexScale(flexGrows[0]);
+    return this.nextModel.setFlexScale(flexGrows[1]);
+  }
 
-  fixInRange: (val, minValue, maxValue) ->
-    Math.min(Math.max(val, minValue), maxValue)
+  fixInRange(val, minValue, maxValue) {
+    return Math.min(Math.max(val, minValue), maxValue);
+  }
 
-  resizePane: ({clientX, clientY, which}) ->
-    return @resizeStopped() unless which is 1
-    return @resizeStopped() unless @previousSibling? and @nextSibling?
+  resizePane({clientX, clientY, which}) {
+    if (which !== 1) { return this.resizeStopped(); }
+    if ((this.previousSibling == null) || (this.nextSibling == null)) { return this.resizeStopped(); }
 
-    if @isHorizontal
-      totalWidth = @previousSibling.clientWidth + @nextSibling.clientWidth
-      #get the left and right width after move the resize view
-      leftWidth = clientX - @previousSibling.getBoundingClientRect().left
-      leftWidth = @fixInRange(leftWidth, 0, totalWidth)
-      rightWidth = totalWidth - leftWidth
-      # set the flex grow by the ratio of left width and right width
-      # to change pane width
-      @setFlexGrow(leftWidth, rightWidth)
-    else
-      totalHeight = @previousSibling.clientHeight + @nextSibling.clientHeight
-      topHeight = clientY - @previousSibling.getBoundingClientRect().top
-      topHeight = @fixInRange(topHeight, 0, totalHeight)
-      bottomHeight = totalHeight - topHeight
-      @setFlexGrow(topHeight, bottomHeight)
+    if (this.isHorizontal) {
+      const totalWidth = this.previousSibling.clientWidth + this.nextSibling.clientWidth;
+      //get the left and right width after move the resize view
+      let leftWidth = clientX - this.previousSibling.getBoundingClientRect().left;
+      leftWidth = this.fixInRange(leftWidth, 0, totalWidth);
+      const rightWidth = totalWidth - leftWidth;
+      // set the flex grow by the ratio of left width and right width
+      // to change pane width
+      return this.setFlexGrow(leftWidth, rightWidth);
+    } else {
+      const totalHeight = this.previousSibling.clientHeight + this.nextSibling.clientHeight;
+      let topHeight = clientY - this.previousSibling.getBoundingClientRect().top;
+      topHeight = this.fixInRange(topHeight, 0, totalHeight);
+      const bottomHeight = totalHeight - topHeight;
+      return this.setFlexGrow(topHeight, bottomHeight);
+    }
+  }
+}
 
-module.exports = PaneResizeHandleElement =
-document.registerElement 'atom-pane-resize-handle', prototype: PaneResizeHandleElement.prototype
+module.exports = (PaneResizeHandleElement =
+document.registerElement('atom-pane-resize-handle', {prototype: PaneResizeHandleElement.prototype}));

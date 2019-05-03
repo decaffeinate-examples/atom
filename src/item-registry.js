@@ -1,15 +1,27 @@
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let ItemRegistry;
 module.exports =
-class ItemRegistry
-  constructor: ->
-    @items = new WeakSet
+(ItemRegistry = class ItemRegistry {
+  constructor() {
+    this.items = new WeakSet;
+  }
 
-  addItem: (item) ->
-    if @hasItem(item)
-      throw new Error("The workspace can only contain one instance of item #{item}")
-    @items.add(item)
+  addItem(item) {
+    if (this.hasItem(item)) {
+      throw new Error(`The workspace can only contain one instance of item ${item}`);
+    }
+    return this.items.add(item);
+  }
 
-  removeItem: (item) ->
-    @items.delete(item)
+  removeItem(item) {
+    return this.items.delete(item);
+  }
 
-  hasItem: (item) ->
-    @items.has(item)
+  hasItem(item) {
+    return this.items.has(item);
+  }
+});

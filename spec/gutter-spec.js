@@ -1,70 +1,87 @@
-Gutter = require '../src/gutter'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Gutter = require('../src/gutter');
 
-describe 'Gutter', ->
-  fakeGutterContainer = {
-    scheduleComponentUpdate: ->
-  }
-  name = 'name'
+describe('Gutter', function() {
+  const fakeGutterContainer = {
+    scheduleComponentUpdate() {}
+  };
+  const name = 'name';
 
-  describe '::hide', ->
-    it 'hides the gutter if it is visible.', ->
-      options =
-        name: name
+  describe('::hide', () =>
+    it('hides the gutter if it is visible.', function() {
+      const options = {
+        name,
         visible: true
-      gutter = new Gutter fakeGutterContainer, options
-      events = []
-      gutter.onDidChangeVisible (gutter) ->
-        events.push gutter.isVisible()
+      };
+      const gutter = new Gutter(fakeGutterContainer, options);
+      const events = [];
+      gutter.onDidChangeVisible(gutter => events.push(gutter.isVisible()));
 
-      expect(gutter.isVisible()).toBe true
-      gutter.hide()
-      expect(gutter.isVisible()).toBe false
-      expect(events).toEqual [false]
-      gutter.hide()
-      expect(gutter.isVisible()).toBe false
-      # An event should only be emitted when the visibility changes.
-      expect(events.length).toBe 1
+      expect(gutter.isVisible()).toBe(true);
+      gutter.hide();
+      expect(gutter.isVisible()).toBe(false);
+      expect(events).toEqual([false]);
+      gutter.hide();
+      expect(gutter.isVisible()).toBe(false);
+      // An event should only be emitted when the visibility changes.
+      return expect(events.length).toBe(1);
+    })
+  );
 
-  describe '::show', ->
-    it 'shows the gutter if it is hidden.', ->
-      options =
-        name: name
+  describe('::show', () =>
+    it('shows the gutter if it is hidden.', function() {
+      const options = {
+        name,
         visible: false
-      gutter = new Gutter fakeGutterContainer, options
-      events = []
-      gutter.onDidChangeVisible (gutter) ->
-        events.push gutter.isVisible()
+      };
+      const gutter = new Gutter(fakeGutterContainer, options);
+      const events = [];
+      gutter.onDidChangeVisible(gutter => events.push(gutter.isVisible()));
 
-      expect(gutter.isVisible()).toBe false
-      gutter.show()
-      expect(gutter.isVisible()).toBe true
-      expect(events).toEqual [true]
-      gutter.show()
-      expect(gutter.isVisible()).toBe true
-      # An event should only be emitted when the visibility changes.
-      expect(events.length).toBe 1
+      expect(gutter.isVisible()).toBe(false);
+      gutter.show();
+      expect(gutter.isVisible()).toBe(true);
+      expect(events).toEqual([true]);
+      gutter.show();
+      expect(gutter.isVisible()).toBe(true);
+      // An event should only be emitted when the visibility changes.
+      return expect(events.length).toBe(1);
+    })
+  );
 
-  describe '::destroy', ->
-    [mockGutterContainer, mockGutterContainerRemovedGutters] = []
+  return describe('::destroy', function() {
+    let [mockGutterContainer, mockGutterContainerRemovedGutters] = Array.from([]);
 
-    beforeEach ->
-      mockGutterContainerRemovedGutters = []
-      mockGutterContainer = removeGutter: (destroyedGutter) ->
-        mockGutterContainerRemovedGutters.push destroyedGutter
+    beforeEach(function() {
+      mockGutterContainerRemovedGutters = [];
+      return mockGutterContainer = { removeGutter(destroyedGutter) {
+        return mockGutterContainerRemovedGutters.push(destroyedGutter);
+      }
+    };
+    });
 
-    it 'removes the gutter from its container.', ->
-      gutter = new Gutter mockGutterContainer, {name}
-      gutter.destroy()
-      expect(mockGutterContainerRemovedGutters).toEqual([gutter])
+    it('removes the gutter from its container.', function() {
+      const gutter = new Gutter(mockGutterContainer, {name});
+      gutter.destroy();
+      return expect(mockGutterContainerRemovedGutters).toEqual([gutter]);
+    });
 
-    it 'calls all callbacks registered on ::onDidDestroy.', ->
-      gutter = new Gutter mockGutterContainer, {name}
-      didDestroy = false
-      gutter.onDidDestroy ->
-        didDestroy = true
-      gutter.destroy()
-      expect(didDestroy).toBe true
+    it('calls all callbacks registered on ::onDidDestroy.', function() {
+      const gutter = new Gutter(mockGutterContainer, {name});
+      let didDestroy = false;
+      gutter.onDidDestroy(() => didDestroy = true);
+      gutter.destroy();
+      return expect(didDestroy).toBe(true);
+    });
 
-    it 'does not allow destroying the line-number gutter', ->
-      gutter = new Gutter mockGutterContainer, {name: 'line-number'}
-      expect(gutter.destroy).toThrow()
+    return it('does not allow destroying the line-number gutter', function() {
+      const gutter = new Gutter(mockGutterContainer, {name: 'line-number'});
+      return expect(gutter.destroy).toThrow();
+    });
+  });
+});

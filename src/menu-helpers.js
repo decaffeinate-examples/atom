@@ -1,54 +1,84 @@
-_ = require 'underscore-plus'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const _ = require('underscore-plus');
 
-ItemSpecificities = new WeakMap
+const ItemSpecificities = new WeakMap;
 
-merge = (menu, item, itemSpecificity=Infinity) ->
-  item = cloneMenuItem(item)
-  ItemSpecificities.set(item, itemSpecificity) if itemSpecificity
-  matchingItemIndex = findMatchingItemIndex(menu, item)
-  matchingItem = menu[matchingItemIndex] unless matchingItemIndex is - 1
+var merge = function(menu, item, itemSpecificity) {
+  let matchingItem;
+  if (itemSpecificity == null) { itemSpecificity = Infinity; }
+  item = cloneMenuItem(item);
+  if (itemSpecificity) { ItemSpecificities.set(item, itemSpecificity); }
+  const matchingItemIndex = findMatchingItemIndex(menu, item);
+  if (matchingItemIndex !== - 1) { matchingItem = menu[matchingItemIndex]; }
 
-  if matchingItem?
-    if item.submenu?
-      merge(matchingItem.submenu, submenuItem, itemSpecificity) for submenuItem in item.submenu
-    else if itemSpecificity
-      unless itemSpecificity < ItemSpecificities.get(matchingItem)
-        menu[matchingItemIndex] = item
-  else unless item.type is 'separator' and _.last(menu)?.type is 'separator'
-    menu.push(item)
+  if (matchingItem != null) {
+    if (item.submenu != null) {
+      for (let submenuItem of Array.from(item.submenu)) { merge(matchingItem.submenu, submenuItem, itemSpecificity); }
+    } else if (itemSpecificity) {
+      if (!(itemSpecificity < ItemSpecificities.get(matchingItem))) {
+        menu[matchingItemIndex] = item;
+      }
+    }
+  } else if ((item.type !== 'separator') || (__guard__(_.last(menu), x => x.type) !== 'separator')) {
+    menu.push(item);
+  }
 
-  return
+};
 
-unmerge = (menu, item) ->
-  matchingItemIndex = findMatchingItemIndex(menu, item)
-  matchingItem = menu[matchingItemIndex] unless matchingItemIndex is - 1
+var unmerge = function(menu, item) {
+  let matchingItem;
+  const matchingItemIndex = findMatchingItemIndex(menu, item);
+  if (matchingItemIndex !== - 1) { matchingItem = menu[matchingItemIndex]; }
 
-  if matchingItem?
-    if item.submenu?
-      unmerge(matchingItem.submenu, submenuItem) for submenuItem in item.submenu
+  if (matchingItem != null) {
+    if (item.submenu != null) {
+      for (let submenuItem of Array.from(item.submenu)) { unmerge(matchingItem.submenu, submenuItem); }
+    }
 
-    unless matchingItem.submenu?.length > 0
-      menu.splice(matchingItemIndex, 1)
+    if (!((matchingItem.submenu != null ? matchingItem.submenu.length : undefined) > 0)) {
+      return menu.splice(matchingItemIndex, 1);
+    }
+  }
+};
 
-findMatchingItemIndex = (menu, {type, label, submenu}) ->
-  return -1 if type is 'separator'
-  for item, index in menu
-    if normalizeLabel(item.label) is normalizeLabel(label) and item.submenu? is submenu?
-      return index
-  -1
+var findMatchingItemIndex = function(menu, {type, label, submenu}) {
+  if (type === 'separator') { return -1; }
+  for (let index = 0; index < menu.length; index++) {
+    const item = menu[index];
+    if ((normalizeLabel(item.label) === normalizeLabel(label)) && ((item.submenu != null) === (submenu != null))) {
+      return index;
+    }
+  }
+  return -1;
+};
 
-normalizeLabel = (label) ->
-  return undefined unless label?
+var normalizeLabel = function(label) {
+  if (label == null) { return undefined; }
 
-  if process.platform is 'darwin'
-    label
-  else
-    label.replace(/\&/g, '')
+  if (process.platform === 'darwin') {
+    return label;
+  } else {
+    return label.replace(/\&/g, '');
+  }
+};
 
-cloneMenuItem = (item) ->
-  item = _.pick(item, 'type', 'label', 'enabled', 'visible', 'command', 'submenu', 'commandDetail', 'role')
-  if item.submenu?
-    item.submenu = item.submenu.map (submenuItem) -> cloneMenuItem(submenuItem)
-  item
+var cloneMenuItem = function(item) {
+  item = _.pick(item, 'type', 'label', 'enabled', 'visible', 'command', 'submenu', 'commandDetail', 'role');
+  if (item.submenu != null) {
+    item.submenu = item.submenu.map(submenuItem => cloneMenuItem(submenuItem));
+  }
+  return item;
+};
 
-module.exports = {merge, unmerge, normalizeLabel, cloneMenuItem}
+module.exports = {merge, unmerge, normalizeLabel, cloneMenuItem};
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

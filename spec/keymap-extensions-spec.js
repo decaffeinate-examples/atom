@@ -1,23 +1,33 @@
-path = require 'path'
-temp = require('temp').track()
-CSON = require 'season'
-fs = require 'fs-plus'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require('path');
+const temp = require('temp').track();
+const CSON = require('season');
+const fs = require('fs-plus');
 
-describe "keymap-extensions", ->
+describe("keymap-extensions", function() {
 
-  beforeEach ->
-    atom.keymaps.configDirPath = temp.path('atom-spec-keymap-ext')
-    fs.writeFileSync(atom.keymaps.getUserKeymapPath(), '#')
-    @userKeymapLoaded = ->
-    atom.keymaps.onDidLoadUserKeymap => @userKeymapLoaded()
+  beforeEach(function() {
+    atom.keymaps.configDirPath = temp.path('atom-spec-keymap-ext');
+    fs.writeFileSync(atom.keymaps.getUserKeymapPath(), '#');
+    this.userKeymapLoaded = function() {};
+    return atom.keymaps.onDidLoadUserKeymap(() => this.userKeymapLoaded());
+  });
 
-  afterEach ->
-    fs.removeSync(atom.keymaps.configDirPath)
-    atom.keymaps.destroy()
+  afterEach(function() {
+    fs.removeSync(atom.keymaps.configDirPath);
+    return atom.keymaps.destroy();
+  });
 
-  describe "did-load-user-keymap", ->
+  return describe("did-load-user-keymap", () =>
 
-    it  "fires when user keymap is loaded", ->
-      spyOn(this, 'userKeymapLoaded')
-      atom.keymaps.loadUserKeymap()
-      expect(@userKeymapLoaded).toHaveBeenCalled()
+    it("fires when user keymap is loaded", function() {
+      spyOn(this, 'userKeymapLoaded');
+      atom.keymaps.loadUserKeymap();
+      return expect(this.userKeymapLoaded).toHaveBeenCalled();
+    })
+  );
+});

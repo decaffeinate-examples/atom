@@ -1,73 +1,98 @@
-fs = require 'fs-plus'
-path = require 'path'
-KeymapManager = require 'atom-keymap'
-CSON = require 'season'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs-plus');
+const path = require('path');
+const KeymapManager = require('atom-keymap');
+const CSON = require('season');
 
-bundledKeymaps = require('../package.json')?._atomKeymaps
+const bundledKeymaps = __guard__(require('../package.json'), x => x._atomKeymaps);
 
-KeymapManager::onDidLoadBundledKeymaps = (callback) ->
-  @emitter.on 'did-load-bundled-keymaps', callback
+KeymapManager.prototype.onDidLoadBundledKeymaps = function(callback) {
+  return this.emitter.on('did-load-bundled-keymaps', callback);
+};
 
-KeymapManager::onDidLoadUserKeymap = (callback) ->
-  @emitter.on 'did-load-user-keymap', callback
+KeymapManager.prototype.onDidLoadUserKeymap = function(callback) {
+  return this.emitter.on('did-load-user-keymap', callback);
+};
 
-KeymapManager::canLoadBundledKeymapsFromMemory = ->
-  bundledKeymaps?
+KeymapManager.prototype.canLoadBundledKeymapsFromMemory = () => bundledKeymaps != null;
 
-KeymapManager::loadBundledKeymaps = ->
-  if bundledKeymaps?
-    for keymapName, keymap of bundledKeymaps
-      keymapPath = "core:#{keymapName}"
-      @add(keymapPath, keymap, 0, @devMode ? false)
-  else
-    keymapsPath = path.join(@resourcePath, 'keymaps')
-    @loadKeymap(keymapsPath)
+KeymapManager.prototype.loadBundledKeymaps = function() {
+  if (bundledKeymaps != null) {
+    for (let keymapName in bundledKeymaps) {
+      const keymap = bundledKeymaps[keymapName];
+      const keymapPath = `core:${keymapName}`;
+      this.add(keymapPath, keymap, 0, this.devMode != null ? this.devMode : false);
+    }
+  } else {
+    const keymapsPath = path.join(this.resourcePath, 'keymaps');
+    this.loadKeymap(keymapsPath);
+  }
 
-  @emitter.emit 'did-load-bundled-keymaps'
+  return this.emitter.emit('did-load-bundled-keymaps');
+};
 
-KeymapManager::getUserKeymapPath = ->
-  return "" unless @configDirPath?
+KeymapManager.prototype.getUserKeymapPath = function() {
+  let userKeymapPath;
+  if (this.configDirPath == null) { return ""; }
 
-  if userKeymapPath = CSON.resolve(path.join(@configDirPath, 'keymap'))
-    userKeymapPath
-  else
-    path.join(@configDirPath, 'keymap.cson')
+  if ((userKeymapPath = CSON.resolve(path.join(this.configDirPath, 'keymap')))) {
+    return userKeymapPath;
+  } else {
+    return path.join(this.configDirPath, 'keymap.cson');
+  }
+};
 
-KeymapManager::loadUserKeymap = ->
-  userKeymapPath = @getUserKeymapPath()
-  return unless fs.isFileSync(userKeymapPath)
+KeymapManager.prototype.loadUserKeymap = function() {
+  let message;
+  const userKeymapPath = this.getUserKeymapPath();
+  if (!fs.isFileSync(userKeymapPath)) { return; }
 
-  try
-    @loadKeymap(userKeymapPath, watch: true, suppressErrors: true, priority: 100)
-  catch error
-    if error.message.indexOf('Unable to watch path') > -1
-      message = """
-        Unable to watch path: `#{path.basename(userKeymapPath)}`. Make sure you
-        have permission to read `#{userKeymapPath}`.
+  try {
+    this.loadKeymap(userKeymapPath, {watch: true, suppressErrors: true, priority: 100});
+  } catch (error) {
+    if (error.message.indexOf('Unable to watch path') > -1) {
+      message = `\
+Unable to watch path: \`${path.basename(userKeymapPath)}\`. Make sure you
+have permission to read \`${userKeymapPath}\`.
 
-        On linux there are currently problems with watch sizes. See
-        [this document][watches] for more info.
-        [watches]:https://github.com/atom/atom/blob/master/docs/build-instructions/linux.md#typeerror-unable-to-watch-path
-      """
-      @notificationManager.addError(message, {dismissable: true})
-    else
-      detail = error.path
-      stack = error.stack
-      @notificationManager.addFatalError(error.message, {detail, stack, dismissable: true})
+On linux there are currently problems with watch sizes. See
+[this document][watches] for more info.
+[watches]:https://github.com/atom/atom/blob/master/docs/build-instructions/linux.md#typeerror-unable-to-watch-path\
+`;
+      this.notificationManager.addError(message, {dismissable: true});
+    } else {
+      const detail = error.path;
+      const { stack } = error;
+      this.notificationManager.addFatalError(error.message, {detail, stack, dismissable: true});
+    }
+  }
 
-  @emitter.emit 'did-load-user-keymap'
+  return this.emitter.emit('did-load-user-keymap');
+};
 
 
-KeymapManager::subscribeToFileReadFailure = ->
-  @onDidFailToReadFile (error) =>
-    userKeymapPath = @getUserKeymapPath()
-    message = "Failed to load `#{userKeymapPath}`"
+KeymapManager.prototype.subscribeToFileReadFailure = function() {
+  return this.onDidFailToReadFile(error => {
+    const userKeymapPath = this.getUserKeymapPath();
+    const message = `Failed to load \`${userKeymapPath}\``;
 
-    detail = if error.location?
+    const detail = (error.location != null) ?
       error.stack
-    else
-      error.message
+    :
+      error.message;
 
-    @notificationManager.addError(message, {detail, dismissable: true})
+    return this.notificationManager.addError(message, {detail, dismissable: true});
+  });
+};
 
-module.exports = KeymapManager
+module.exports = KeymapManager;
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

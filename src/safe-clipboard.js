@@ -1,6 +1,6 @@
-# Using clipboard in renderer process is not safe on Linux.
+// Using clipboard in renderer process is not safe on Linux.
 module.exports =
-  if process.platform is 'linux' and process.type is 'renderer'
+  (process.platform === 'linux') && (process.type === 'renderer') ?
     require('electron').remote.clipboard
-  else
-    require('electron').clipboard
+  :
+    require('electron').clipboard;
